@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mağaza - Bilemezsin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0b;
+            --bg-card: #141416;
+            --bg-card-hover: #1a1a1d;
+            --border-color: #2a2a2d;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6b6b6b;
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #5558e3;
+            --bi-color: #f59e0b;
+            --bi-color-light: #fbbf24;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .main-content {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .bi-balance {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 12px 20px;
+            border-radius: 12px;
+        }
+
+        .bi-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--bi-color), var(--bi-color-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            color: #000;
+        }
+
+        .bi-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bi-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .bi-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--bi-color);
+        }
+
+        /* Kategoriler */
+        .categories-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .category-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .category-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .category-btn.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .category-btn .emoji {
+            font-size: 18px;
+        }
+
+        /* Ürün Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .product-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, var(--bg-card-hover), var(--bg-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            position: relative;
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-new {
+            background: var(--success);
+            color: white;
+        }
+
+        .badge-popular {
+            background: var(--danger);
+            color: white;
+        }
+
+        .badge-limited {
+            background: var(--warning);
+            color: #000;
+        }
+
+        .product-content {
+            padding: 20px;
+        }
+
+        .product-category {
+            font-size: 12px;
+            color: var(--accent-primary);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .product-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .product-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-price {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .price-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--bi-color), var(--bi-color-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            color: #000;
+        }
+
+        .price-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--bi-color);
+        }
+
+        .btn-buy {
+            padding: 10px 20px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-buy:hover {
+            background: var(--accent-primary-hover);
+            transform: scale(1.05);
+        }
+
+        .btn-buy:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Stok bilgisi */
+        .product-stock {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .stock-bar {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .stock-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .stock-fill.low {
+            background: var(--warning);
+        }
+
+        .stock-fill.critical {
+            background: var(--danger);
+        }
+
+        /* Satın Alma Geçmişi */
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title .icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .purchase-history {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .purchase-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .purchase-item:last-child {
+            border-bottom: none;
+        }
+
+        .purchase-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-dark);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .purchase-info {
+            flex: 1;
+        }
+
+        .purchase-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .purchase-date {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .purchase-price {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--bi-color);
+            font-weight: 600;
+        }
+
+        .purchase-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-delivered {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-processing {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--info);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-dark);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-product {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .modal-product-image {
+            width: 80px;
+            height: 80px;
+            background: var(--bg-dark);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .modal-product-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .modal-product-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .modal-price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-dark);
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .modal-price-label {
+            color: var(--text-secondary);
+        }
+
+        .modal-price-value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--bi-color);
+        }
+
+        .modal-balance-check {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .balance-sufficient {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .balance-insufficient {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .balance-check-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .balance-check-row:last-child {
+            margin-bottom: 0;
+            padding-top: 8px;
+            border-top: 1px dashed var(--border-color);
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-modal {
+            flex: 1;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-cancel:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .btn-confirm {
+            background: var(--accent-primary);
+            border: none;
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: var(--accent-primary-hover);
+        }
+
+        .btn-confirm:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Empty State */
+        .empty-history {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-secondary);
+        }
+
+        .empty-history .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .purchase-item {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/header') %>
+    
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">🛒 Mağaza</h1>
+            <div class="bi-balance">
+                <div class="bi-icon">bi!</div>
+                <div class="bi-info">
+                    <span class="bi-label">Bakiyeniz</span>
+                    <span class="bi-amount"><%= typeof user !== 'undefined' ? user.biCoin?.toLocaleString('tr-TR') : '15,750' %> bi!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kategoriler -->
+        <div class="categories-nav">
+            <button class="category-btn active" onclick="filterCategory('all')">
+                <span class="emoji">🏪</span>
+                Tümü
+            </button>
+            <button class="category-btn" onclick="filterCategory('gift-card')">
+                <span class="emoji">🎁</span>
+                Hediye Kartları
+            </button>
+            <button class="category-btn" onclick="filterCategory('premium')">
+                <span class="emoji">👑</span>
+                Premium
+            </button>
+            <button class="category-btn" onclick="filterCategory('boost')">
+                <span class="emoji">🚀</span>
+                Boost
+            </button>
+            <button class="category-btn" onclick="filterCategory('cosmetic')">
+                <span class="emoji">✨</span>
+                Kozmetik
+            </button>
+            <button class="category-btn" onclick="filterCategory('special')">
+                <span class="emoji">🎯</span>
+                Özel Fırsatlar
+            </button>
+        </div>
+
+        <!-- Ürünler -->
+        <div class="products-grid" id="productsGrid">
+            <!-- Netflix Hediye Kartı -->
+            <div class="product-card" data-category="gift-card">
+                <div class="product-image" style="background: linear-gradient(135deg, #e50914, #b20710);">
+                    <span class="badge-popular product-badge">Popüler</span>
+                    📺
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Hediye Kartları</div>
+                    <h3 class="product-name">Netflix 1 Aylık</h3>
+                    <p class="product-description">Netflix standart üyelik hediye kartı. E-posta ile gönderilir.</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">5,000</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('Netflix 1 Aylık', 5000, '📺')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Stok: 23/50</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill" style="width: 46%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spotify Hediye Kartı -->
+            <div class="product-card" data-category="gift-card">
+                <div class="product-image" style="background: linear-gradient(135deg, #1DB954, #169c46);">
+                    <span class="badge-new product-badge">Yeni</span>
+                    🎵
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Hediye Kartları</div>
+                    <h3 class="product-name">Spotify 1 Aylık</h3>
+                    <p class="product-description">Spotify Premium bireysel üyelik. Anında teslimat.</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">3,500</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('Spotify 1 Aylık', 3500, '🎵')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Stok: 45/50</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill" style="width: 90%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Premium Üyelik -->
+            <div class="product-card" data-category="premium">
+                <div class="product-image" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <span class="badge-popular product-badge">Popüler</span>
+                    👑
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Premium</div>
+                    <h3 class="product-name">Premium Üyelik (1 Ay)</h3>
+                    <p class="product-description">Reklamsız deneyim, özel rozetler ve %10 ekstra bi! kazanç.</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">10,000</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('Premium Üyelik (1 Ay)', 10000, '👑')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Sınırsız</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2x Kazanç Boost -->
+            <div class="product-card" data-category="boost">
+                <div class="product-image" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    🚀
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Boost</div>
+                    <h3 class="product-name">2x Kazanç Boost (24 Saat)</h3>
+                    <p class="product-description">24 saat boyunca tüm kazançlarınız 2 katına çıkar!</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">2,500</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('2x Kazanç Boost', 2500, '🚀')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Sınırsız</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Altın Rozet -->
+            <div class="product-card" data-category="cosmetic">
+                <div class="product-image" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);">
+                    🏅
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Kozmetik</div>
+                    <h3 class="product-name">Altın Rozet</h3>
+                    <p class="product-description">Profilinizde görünen özel altın rozet. Kalıcı.</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">15,000</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('Altın Rozet', 15000, '🏅')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Stok: 5/10</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill low" style="width: 50%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Steam Cüzdan -->
+            <div class="product-card" data-category="gift-card">
+                <div class="product-image" style="background: linear-gradient(135deg, #1b2838, #2a475e);">
+                    🎮
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Hediye Kartları</div>
+                    <h3 class="product-name">Steam 50 TL</h3>
+                    <p class="product-description">Steam cüzdan kodu. Anında e-posta ile gönderim.</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">4,000</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('Steam 50 TL', 4000, '🎮')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Stok: 12/30</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill low" style="width: 40%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Özel Çerçeve -->
+            <div class="product-card" data-category="cosmetic">
+                <div class="product-image" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                    <span class="badge-new product-badge">Yeni</span>
+                    🖼️
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Kozmetik</div>
+                    <h3 class="product-name">Neon Profil Çerçevesi</h3>
+                    <p class="product-description">Profilinize animasyonlu neon çerçeve. Kalıcı.</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">8,000</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('Neon Profil Çerçevesi', 8000, '🖼️')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Stok: 3/20</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill critical" style="width: 15%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mega Paket -->
+            <div class="product-card" data-category="special">
+                <div class="product-image" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+                    <span class="badge-limited product-badge">Sınırlı</span>
+                    📦
+                </div>
+                <div class="product-content">
+                    <div class="product-category">Özel Fırsatlar</div>
+                    <h3 class="product-name">Mega Başlangıç Paketi</h3>
+                    <p class="product-description">Premium (1 ay) + 2x Boost (7 gün) + Özel Rozet. %30 indirimli!</p>
+                    <div class="product-footer">
+                        <div class="product-price">
+                            <span class="price-icon">bi!</span>
+                            <span class="price-amount">12,000</span>
+                        </div>
+                        <button class="btn-buy" onclick="openPurchaseModal('Mega Başlangıç Paketi', 12000, '📦')">Satın Al</button>
+                    </div>
+                    <div class="product-stock">
+                        <span>Stok: 2/10</span>
+                        <div class="stock-bar">
+                            <div class="stock-fill critical" style="width: 20%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Satın Alma Geçmişi -->
+        <h2 class="section-title">
+            <span class="icon">📋</span>
+            Satın Alma Geçmişi
+        </h2>
+        <div class="purchase-history">
+            <div class="purchase-item">
+                <div class="purchase-icon">🎵</div>
+                <div class="purchase-info">
+                    <div class="purchase-name">Spotify 1 Aylık</div>
+                    <div class="purchase-date">15 Aralık 2024, 14:32</div>
+                </div>
+                <div class="purchase-price">
+                    <span class="price-icon" style="width: 20px; height: 20px; font-size: 10px;">bi!</span>
+                    -3,500
+                </div>
+                <span class="purchase-status status-delivered">Teslim Edildi</span>
+            </div>
+            <div class="purchase-item">
+                <div class="purchase-icon">🚀</div>
+                <div class="purchase-info">
+                    <div class="purchase-name">2x Kazanç Boost (24 Saat)</div>
+                    <div class="purchase-date">12 Aralık 2024, 09:15</div>
+                </div>
+                <div class="purchase-price">
+                    <span class="price-icon" style="width: 20px; height: 20px; font-size: 10px;">bi!</span>
+                    -2,500
+                </div>
+                <span class="purchase-status status-delivered">Aktif</span>
+            </div>
+            <div class="purchase-item">
+                <div class="purchase-icon">📺</div>
+                <div class="purchase-info">
+                    <div class="purchase-name">Netflix 1 Aylık</div>
+                    <div class="purchase-date">5 Aralık 2024, 18:45</div>
+                </div>
+                <div class="purchase-price">
+                    <span class="price-icon" style="width: 20px; height: 20px; font-size: 10px;">bi!</span>
+                    -5,000
+                </div>
+                <span class="purchase-status status-delivered">Teslim Edildi</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Satın Alma Modal -->
+    <div class="modal-overlay" id="purchaseModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Satın Almayı Onayla</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-product">
+                    <div class="modal-product-image" id="modalProductImage">📺</div>
+                    <div class="modal-product-info">
+                        <h3 id="modalProductName">Ürün Adı</h3>
+                        <p>Bu ürünü satın almak üzeresiniz.</p>
+                    </div>
+                </div>
+                <div class="modal-price-row">
+                    <span class="modal-price-label">Fiyat</span>
+                    <span class="modal-price-value">
+                        <span class="price-icon">bi!</span>
+                        <span id="modalProductPrice">5,000</span>
+                    </span>
+                </div>
+                <div class="modal-balance-check balance-sufficient" id="balanceCheck">
+                    <div class="balance-check-row">
+                        <span>Mevcut Bakiye</span>
+                        <span id="currentBalance">15,750 bi!</span>
+                    </div>
+                    <div class="balance-check-row">
+                        <span>Ürün Fiyatı</span>
+                        <span id="productCost">-5,000 bi!</span>
+                    </div>
+                    <div class="balance-check-row">
+                        <span>Kalan Bakiye</span>
+                        <span id="remainingBalance">10,750 bi!</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-cancel" onclick="closeModal()">İptal</button>
+                <button class="btn-modal btn-confirm" id="confirmBtn" onclick="confirmPurchase()">Satın Al</button>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+
+    <script>
+        const userBalance = 15750;
+        let selectedProduct = null;
+
+        function filterCategory(category) {
+            // Buton aktif durumu
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.category-btn').classList.add('active');
+            
+            // Ürünleri filtrele
+            const products = document.querySelectorAll('.product-card');
+            products.forEach(product => {
+                if (category === 'all' || product.dataset.category === category) {
+                    product.style.display = 'block';
+                } else {
+                    product.style.display = 'none';
+                }
+            });
+        }
+
+        function openPurchaseModal(name, price, emoji) {
+            selectedProduct = { name, price, emoji };
+            
+            document.getElementById('modalProductImage').textContent = emoji;
+            document.getElementById('modalProductName').textContent = name;
+            document.getElementById('modalProductPrice').textContent = price.toLocaleString('tr-TR');
+            document.getElementById('currentBalance').textContent = userBalance.toLocaleString('tr-TR') + ' bi!';
+            document.getElementById('productCost').textContent = '-' + price.toLocaleString('tr-TR') + ' bi!';
+            
+            const remaining = userBalance - price;
+            document.getElementById('remainingBalance').textContent = remaining.toLocaleString('tr-TR') + ' bi!';
+            
+            const balanceCheck = document.getElementById('balanceCheck');
+            const confirmBtn = document.getElementById('confirmBtn');
+            
+            if (remaining >= 0) {
+                balanceCheck.className = 'modal-balance-check balance-sufficient';
+                confirmBtn.disabled = false;
+            } else {
+                balanceCheck.className = 'modal-balance-check balance-insufficient';
+                confirmBtn.disabled = true;
+            }
+            
+            document.getElementById('purchaseModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('purchaseModal').classList.remove('active');
+            selectedProduct = null;
+        }
+
+        function confirmPurchase() {
+            if (selectedProduct) {
+                alert('Satın alma işlemi başarılı!\n\n' + selectedProduct.name + ' satın aldınız.');
+                closeModal();
+                // Gerçek uygulamada burada API çağrısı yapılır
+            }
+        }
+
+        // Modal dışına tıklayınca kapat
+        document.getElementById('purchaseModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

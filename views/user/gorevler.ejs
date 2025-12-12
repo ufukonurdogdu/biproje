@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görevler - Bilemezsin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0b;
+            --bg-card: #141416;
+            --bg-card-hover: #1a1a1d;
+            --border-color: #2a2a2d;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6b6b6b;
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #5558e3;
+            --bi-color: #f59e0b;
+            --bi-color-light: #fbbf24;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .main-content {
+            padding: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        /* Özet Kartları */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .summary-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .summary-icon.daily {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .summary-icon.weekly {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .summary-icon.streak {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .summary-icon.earned {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .summary-info {
+            flex: 1;
+        }
+
+        .summary-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .summary-value.accent {
+            color: var(--accent-primary);
+        }
+
+        .summary-value.bi {
+            color: var(--bi-color);
+        }
+
+        .summary-value.danger {
+            color: var(--danger);
+        }
+
+        .summary-value.success {
+            color: var(--success);
+        }
+
+        /* Reset Timer */
+        .reset-timer {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 16px;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .reset-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reset-icon {
+            font-size: 24px;
+        }
+
+        .reset-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .reset-text strong {
+            color: var(--text-primary);
+        }
+
+        .timer-display {
+            display: flex;
+            gap: 8px;
+        }
+
+        .timer-unit {
+            background: var(--bg-dark);
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 50px;
+        }
+
+        .timer-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .timer-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Görev Bölümleri */
+        .missions-section {
+            margin-bottom: 32px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .section-title .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .section-title .icon.daily {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .section-title .icon.weekly {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .section-title .icon.special {
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        .section-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .badge-progress {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .badge-complete {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        /* Görev Kartları */
+        .missions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .mission-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s;
+        }
+
+        .mission-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateX(4px);
+        }
+
+        .mission-card.completed {
+            opacity: 0.6;
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .mission-card.claimed {
+            opacity: 0.5;
+        }
+
+        .mission-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .mission-icon.green { background: rgba(16, 185, 129, 0.1); }
+        .mission-icon.blue { background: rgba(59, 130, 246, 0.1); }
+        .mission-icon.yellow { background: rgba(245, 158, 11, 0.1); }
+        .mission-icon.purple { background: rgba(139, 92, 246, 0.1); }
+        .mission-icon.pink { background: rgba(236, 72, 153, 0.1); }
+        .mission-icon.red { background: rgba(239, 68, 68, 0.1); }
+
+        .mission-content {
+            flex: 1;
+        }
+
+        .mission-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .mission-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .mission-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            max-width: 200px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), #818cf8);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.complete {
+            background: linear-gradient(90deg, var(--success), #34d399);
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .mission-reward {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .reward-amount {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: 20px;
+        }
+
+        .reward-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--bi-color), var(--bi-color-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #000;
+        }
+
+        .reward-value {
+            font-weight: 700;
+            color: var(--bi-color);
+        }
+
+        .btn-claim {
+            padding: 10px 20px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-claim:hover {
+            background: var(--accent-primary-hover);
+            transform: scale(1.05);
+        }
+
+        .btn-claim:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-claim.claimed {
+            background: var(--success);
+            cursor: default;
+        }
+
+        /* Bonus Bölümü */
+        .bonus-section {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.05));
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .bonus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .bonus-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .bonus-title .icon {
+            font-size: 28px;
+        }
+
+        .streak-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+        }
+
+        .streak-day {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 8px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .streak-day.claimed {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+        }
+
+        .streak-day.today {
+            border-color: var(--bi-color);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .streak-day.locked {
+            opacity: 0.5;
+        }
+
+        .streak-day-num {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .streak-day-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .streak-day-reward {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--bi-color);
+        }
+
+        .streak-day.claimed .streak-day-icon::after {
+            content: '✓';
+            position: absolute;
+            font-size: 12px;
+            color: var(--success);
+        }
+
+        .btn-claim-daily {
+            width: 100%;
+            padding: 14px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, var(--bi-color), var(--bi-color-light));
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-claim-daily:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-claim-daily:disabled {
+            background: var(--text-muted);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Başarımlar */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .achievement-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s;
+        }
+
+        .achievement-card:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .achievement-card.unlocked {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent);
+            border-color: var(--accent-primary);
+        }
+
+        .achievement-card.locked {
+            opacity: 0.6;
+        }
+
+        .achievement-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            position: relative;
+        }
+
+        .achievement-icon.gold {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+
+        .achievement-icon.silver {
+            background: linear-gradient(135deg, #94a3b8, #64748b);
+        }
+
+        .achievement-icon.bronze {
+            background: linear-gradient(135deg, #d97706, #b45309);
+        }
+
+        .achievement-icon.locked {
+            background: var(--bg-dark);
+            filter: grayscale(1);
+        }
+
+        .achievement-icon .lock {
+            position: absolute;
+            font-size: 16px;
+        }
+
+        .achievement-content {
+            flex: 1;
+        }
+
+        .achievement-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .achievement-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .achievement-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .achievement-progress .progress-bar {
+            height: 4px;
+            max-width: 100px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .reset-timer {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .mission-card {
+                flex-wrap: wrap;
+            }
+
+            .mission-content {
+                width: 100%;
+                order: 2;
+            }
+
+            .mission-reward {
+                flex-direction: row;
+                width: 100%;
+                justify-content: space-between;
+                order: 3;
+            }
+
+            .streak-days {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .achievements-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/header') %>
+    
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">🎯 Görevler</h1>
+            <p class="page-subtitle">Görevleri tamamla, bi! coin kazan!</p>
+        </div>
+
+        <!-- Özet Kartları -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-icon daily">📋</div>
+                <div class="summary-info">
+                    <div class="summary-label">Günlük Görevler</div>
+                    <div class="summary-value accent">3/5</div>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon weekly">📅</div>
+                <div class="summary-info">
+                    <div class="summary-label">Haftalık Görevler</div>
+                    <div class="summary-value bi">2/4</div>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon streak">🔥</div>
+                <div class="summary-info">
+                    <div class="summary-label">Giriş Serisi</div>
+                    <div class="summary-value danger">5 Gün</div>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon earned">💰</div>
+                <div class="summary-info">
+                    <div class="summary-label">Bu Hafta Kazanılan</div>
+                    <div class="summary-value success">+2,450 bi!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reset Timer -->
+        <div class="reset-timer">
+            <div class="reset-info">
+                <span class="reset-icon">⏰</span>
+                <span class="reset-text">Günlük görevler <strong>sıfırlanana</strong> kalan süre</span>
+            </div>
+            <div class="timer-display">
+                <div class="timer-unit">
+                    <div class="timer-value" id="hours">08</div>
+                    <div class="timer-label">Saat</div>
+                </div>
+                <div class="timer-unit">
+                    <div class="timer-value" id="minutes">42</div>
+                    <div class="timer-label">Dakika</div>
+                </div>
+                <div class="timer-unit">
+                    <div class="timer-value" id="seconds">15</div>
+                    <div class="timer-label">Saniye</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Günlük Giriş Bonusu -->
+        <div class="bonus-section">
+            <div class="bonus-header">
+                <div class="bonus-title">
+                    <span class="icon">🎁</span>
+                    Günlük Giriş Bonusu
+                </div>
+                <span style="color: var(--bi-color); font-weight: 600;">🔥 5 Günlük Seri!</span>
+            </div>
+            <div class="streak-days">
+                <div class="streak-day claimed">
+                    <div class="streak-day-num">1. Gün</div>
+                    <div class="streak-day-icon">🎁</div>
+                    <div class="streak-day-reward">+50 bi!</div>
+                </div>
+                <div class="streak-day claimed">
+                    <div class="streak-day-num">2. Gün</div>
+                    <div class="streak-day-icon">🎁</div>
+                    <div class="streak-day-reward">+75 bi!</div>
+                </div>
+                <div class="streak-day claimed">
+                    <div class="streak-day-num">3. Gün</div>
+                    <div class="streak-day-icon">🎁</div>
+                    <div class="streak-day-reward">+100 bi!</div>
+                </div>
+                <div class="streak-day claimed">
+                    <div class="streak-day-num">4. Gün</div>
+                    <div class="streak-day-icon">🎁</div>
+                    <div class="streak-day-reward">+125 bi!</div>
+                </div>
+                <div class="streak-day today">
+                    <div class="streak-day-num">5. Gün</div>
+                    <div class="streak-day-icon">🎁</div>
+                    <div class="streak-day-reward">+150 bi!</div>
+                </div>
+                <div class="streak-day locked">
+                    <div class="streak-day-num">6. Gün</div>
+                    <div class="streak-day-icon">🔒</div>
+                    <div class="streak-day-reward">+200 bi!</div>
+                </div>
+                <div class="streak-day locked">
+                    <div class="streak-day-num">7. Gün</div>
+                    <div class="streak-day-icon">👑</div>
+                    <div class="streak-day-reward">+500 bi!</div>
+                </div>
+            </div>
+            <button class="btn-claim-daily" onclick="claimDailyBonus()">
+                🎁 Günlük Bonusu Al (+150 bi!)
+            </button>
+        </div>
+
+        <!-- Günlük Görevler -->
+        <div class="missions-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="icon daily">📋</span>
+                    Günlük Görevler
+                </h2>
+                <span class="section-badge badge-progress">3/5 Tamamlandı</span>
+            </div>
+            <div class="missions-list">
+                <!-- Tamamlanmış görev -->
+                <div class="mission-card completed">
+                    <div class="mission-icon green">✅</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">İlk Giriş</h3>
+                        <p class="mission-description">Bugün siteye giriş yap</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill complete" style="width: 100%;"></div>
+                            </div>
+                            <span class="progress-text">1/1 ✓</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+50</span>
+                        </div>
+                        <button class="btn-claim claimed" disabled>Alındı ✓</button>
+                    </div>
+                </div>
+
+                <!-- Tamamlanmış görev -->
+                <div class="mission-card completed">
+                    <div class="mission-icon blue">🎯</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">Tahmin Yap</h3>
+                        <p class="mission-description">Bugün en az 3 tahmin yap</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill complete" style="width: 100%;"></div>
+                            </div>
+                            <span class="progress-text">3/3 ✓</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+100</span>
+                        </div>
+                        <button class="btn-claim claimed" disabled>Alındı ✓</button>
+                    </div>
+                </div>
+
+                <!-- Tamamlanmış ama alınmamış -->
+                <div class="mission-card completed">
+                    <div class="mission-icon yellow">💬</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">Sosyal Kelebek</h3>
+                        <p class="mission-description">5 tahminde yorum yap</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill complete" style="width: 100%;"></div>
+                            </div>
+                            <span class="progress-text">5/5 ✓</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+150</span>
+                        </div>
+                        <button class="btn-claim" onclick="claimReward(this, 150)">Ödülü Al</button>
+                    </div>
+                </div>
+
+                <!-- Devam eden görev -->
+                <div class="mission-card">
+                    <div class="mission-icon purple">🏆</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">Kazanan Tahmin</h3>
+                        <p class="mission-description">Bugün en az 1 tahmin kazan</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%;"></div>
+                            </div>
+                            <span class="progress-text">0/1</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+200</span>
+                        </div>
+                        <button class="btn-claim" disabled>Devam Ediyor</button>
+                    </div>
+                </div>
+
+                <!-- Devam eden görev -->
+                <div class="mission-card">
+                    <div class="mission-icon pink">👥</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">Arkadaş Davet Et</h3>
+                        <p class="mission-description">1 arkadaşını davet et</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%;"></div>
+                            </div>
+                            <span class="progress-text">0/1</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+500</span>
+                        </div>
+                        <button class="btn-claim" disabled>Devam Ediyor</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Haftalık Görevler -->
+        <div class="missions-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="icon weekly">📅</span>
+                    Haftalık Görevler
+                </h2>
+                <span class="section-badge badge-progress">2/4 Tamamlandı</span>
+            </div>
+            <div class="missions-list">
+                <!-- Tamamlanmış -->
+                <div class="mission-card completed">
+                    <div class="mission-icon green">📊</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">Haftalık Tahminler</h3>
+                        <p class="mission-description">Bu hafta 20 tahmin yap</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill complete" style="width: 100%;"></div>
+                            </div>
+                            <span class="progress-text">20/20 ✓</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+500</span>
+                        </div>
+                        <button class="btn-claim claimed" disabled>Alındı ✓</button>
+                    </div>
+                </div>
+
+                <!-- Tamamlanmış -->
+                <div class="mission-card completed">
+                    <div class="mission-icon blue">🎯</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">Farklı Kategoriler</h3>
+                        <p class="mission-description">3 farklı kategoride tahmin yap</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill complete" style="width: 100%;"></div>
+                            </div>
+                            <span class="progress-text">3/3 ✓</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+300</span>
+                        </div>
+                        <button class="btn-claim" onclick="claimReward(this, 300)">Ödülü Al</button>
+                    </div>
+                </div>
+
+                <!-- Devam eden -->
+                <div class="mission-card">
+                    <div class="mission-icon yellow">🏅</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">Sıralama Tırmanışı</h3>
+                        <p class="mission-description">Sıralamada 50 basamak yüksel</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 64%;"></div>
+                            </div>
+                            <span class="progress-text">32/50</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+750</span>
+                        </div>
+                        <button class="btn-claim" disabled>Devam Ediyor</button>
+                    </div>
+                </div>
+
+                <!-- Devam eden -->
+                <div class="mission-card">
+                    <div class="mission-icon red">🔥</div>
+                    <div class="mission-content">
+                        <h3 class="mission-title">7 Günlük Seri</h3>
+                        <p class="mission-description">7 gün üst üste giriş yap</p>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 71%;"></div>
+                            </div>
+                            <span class="progress-text">5/7</span>
+                        </div>
+                    </div>
+                    <div class="mission-reward">
+                        <div class="reward-amount">
+                            <span class="reward-icon">bi!</span>
+                            <span class="reward-value">+1,000</span>
+                        </div>
+                        <button class="btn-claim" disabled>Devam Ediyor</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Başarımlar -->
+        <div class="missions-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="icon special">🏆</span>
+                    Başarımlar
+                </h2>
+                <span class="section-badge badge-progress">8/15 Açıldı</span>
+            </div>
+            <div class="achievements-grid">
+                <div class="achievement-card unlocked">
+                    <div class="achievement-icon gold">🎯</div>
+                    <div class="achievement-content">
+                        <h3 class="achievement-name">İlk Tahmin</h3>
+                        <p class="achievement-description">İlk tahminini yap</p>
+                        <div class="achievement-progress">
+                            <span style="color: var(--success);">✓ Tamamlandı</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="achievement-card unlocked">
+                    <div class="achievement-icon gold">🏆</div>
+                    <div class="achievement-content">
+                        <h3 class="achievement-name">İlk Zafer</h3>
+                        <p class="achievement-description">İlk tahminini kazan</p>
+                        <div class="achievement-progress">
+                            <span style="color: var(--success);">✓ Tamamlandı</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="achievement-card unlocked">
+                    <div class="achievement-icon silver">💯</div>
+                    <div class="achievement-content">
+                        <h3 class="achievement-name">Tahmin Ustası</h3>
+                        <p class="achievement-description">100 tahmin yap</p>
+                        <div class="achievement-progress">
+                            <span style="color: var(--success);">✓ Tamamlandı</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon bronze">🎖️</div>
+                    <div class="achievement-content">
+                        <h3 class="achievement-name">Seri Katili</h3>
+                        <p class="achievement-description">5 tahmin üst üste kazan</p>
+                        <div class="achievement-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 60%;"></div>
+                            </div>
+                            <span>3/5</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="achievement-card locked">
+                    <div class="achievement-icon locked">
+                        🌟
+                        <span class="lock">🔒</span>
+                    </div>
+                    <div class="achievement-content">
+                        <h3 class="achievement-name">Efsane</h3>
+                        <p class="achievement-description">1000 tahmin yap</p>
+                        <div class="achievement-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 24%;"></div>
+                            </div>
+                            <span>247/1000</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="achievement-card locked">
+                    <div class="achievement-icon locked">
+                        👑
+                        <span class="lock">🔒</span>
+                    </div>
+                    <div class="achievement-content">
+                        <h3 class="achievement-name">bi! Milyoneri</h3>
+                        <p class="achievement-description">1,000,000 bi! kazan (toplam)</p>
+                        <div class="achievement-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 12%;"></div>
+                            </div>
+                            <span>124,500/1M</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+
+    <script>
+        // Geri sayım timer
+        function updateTimer() {
+            const now = new Date();
+            const midnight = new Date();
+            midnight.setHours(24, 0, 0, 0);
+            
+            const diff = midnight - now;
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+        }
+        
+        setInterval(updateTimer, 1000);
+        updateTimer();
+
+        // Günlük bonus al
+        function claimDailyBonus() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '✓ Bonus Alındı!';
+            
+            // Bugünkü günü işaretle
+            const today = document.querySelector('.streak-day.today');
+            if (today) {
+                today.classList.add('claimed');
+            }
+            
+            alert('Tebrikler! 150 bi! kazandınız!');
+        }
+
+        // Görev ödülü al
+        function claimReward(btn, amount) {
+            btn.disabled = true;
+            btn.classList.add('claimed');
+            btn.textContent = 'Alındı ✓';
+            
+            const card = btn.closest('.mission-card');
+            card.classList.add('claimed');
+            
+            alert('Tebrikler! ' + amount + ' bi! kazandınız!');
+        }
+    </script>
+</body>
+</html>
