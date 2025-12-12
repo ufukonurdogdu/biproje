@@ -82,18 +82,16 @@ module.exports = function(passport) {
                 return done(null, user);
             }
 
-            // Geçici benzersiz kullanıcı adı oluştur (sonra değiştirecek)
-            const tempUsername = await generateTempUsername();
-            
+            // ad_soyad'dan otomatik kullanıcı adı oluştur
+            const username = await generateUsernameFromName(profile.displayName);
+
             const userId = await db.insert(
-                `INSERT INTO kullanicilar (google_id, email, ad_soyad, kullanici_adi, avatar, dogrulanmis_mi, giris_yontemi, son_giris)
-                 VALUES (?, ?, ?, ?, ?, 1, 'google', NOW())`,
-                [profile.id, email, profile.displayName, tempUsername, profile.photos[0]?.value || null]
+                `INSERT INTO kullanicilar (google_id, email, ad_soyad, kullanici_adi, avatar, dogrulanmis_mi, kullanici_adi_onaylandi, giris_yontemi, son_giris)
+                 VALUES (?, ?, ?, ?, ?, 1, 1, 'google', NOW())`,
+                [profile.id, email, profile.displayName, username, profile.photos[0]?.value || null]
             );
 
             user = await db.getOne('SELECT * FROM kullanicilar WHERE id = ?', [userId]);
-            // kullanici_adi'yi null gibi işaretle (sonra değiştirecek)
-            user._needsUsername = true;
             return done(null, user);
         } catch (err) {
             return done(err, null);
@@ -140,17 +138,16 @@ module.exports = function(passport) {
                 return done(null, user);
             }
 
-            // Geçici benzersiz kullanıcı adı oluştur (sonra değiştirecek)
-            const tempUsername = await generateTempUsername();
-            
+            // ad_soyad'dan otomatik kullanıcı adı oluştur
+            const username = await generateUsernameFromName(profile.displayName);
+
             const userId = await db.insert(
-                `INSERT INTO kullanicilar (facebook_id, email, ad_soyad, kullanici_adi, avatar, dogrulanmis_mi, giris_yontemi, son_giris)
-                 VALUES (?, ?, ?, ?, ?, 1, 'facebook', NOW())`,
-                [profile.id, email, profile.displayName, tempUsername, profile.photos[0]?.value || null]
+                `INSERT INTO kullanicilar (facebook_id, email, ad_soyad, kullanici_adi, avatar, dogrulanmis_mi, kullanici_adi_onaylandi, giris_yontemi, son_giris)
+                 VALUES (?, ?, ?, ?, ?, 1, 1, 'facebook', NOW())`,
+                [profile.id, email, profile.displayName, username, profile.photos[0]?.value || null]
             );
 
             user = await db.getOne('SELECT * FROM kullanicilar WHERE id = ?', [userId]);
-            user._needsUsername = true;
             return done(null, user);
         } catch (err) {
             return done(err, null);
@@ -173,40 +170,40 @@ module.exports = function(passport) {
     });
 };
 
-// Geçici kullanıcı adı oluştur (temp_ prefix ile)
-async function generateTempUsername() {
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 6);
-    let tempUsername = `user_${timestamp}${random}`;
-    
-    // Benzersiz olduğundan emin ol
-    let counter = 0;
-    while (await db.getOne('SELECT id FROM kullanicilar WHERE kullanici_adi = ?', [tempUsername])) {
-        counter++;
-        tempUsername = `user_${timestamp}${random}${counter}`;
-    }
-    
-    return tempUsername;
-}
+// ad_soyad'dan kullanıcı adı oluştur (Türkçe karakter desteği)
+async function generateUsernameFromName(adSoyad) {
+    // Türkçe karakterleri dönüştür
+    const turkishMap = {
+        'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+        'Ç': 'c', 'Ğ': 'g', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u'
+    };
 
-// Benzersiz kullanıcı adı oluştur
-async function generateUniqueUsername(displayName) {
-    let baseUsername = displayName
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-        .substring(0, 15);
-    
-    if (!baseUsername) {
-        baseUsername = 'kullanici';
+    let username = (adSoyad || 'kullanici').toLowerCase();
+
+    // Türkçe karakterleri değiştir
+    for (const [tr, en] of Object.entries(turkishMap)) {
+        username = username.replace(new RegExp(tr, 'g'), en);
     }
 
-    let username = baseUsername;
+    // Sadece harf ve rakam bırak, boşlukları kaldır
+    username = username.replace(/[^a-z0-9]/g, '');
+
+    // Minimum 3 karakter
+    if (username.length < 3) {
+        username = 'kullanici';
+    }
+
+    // Maximum 15 karakter
+    username = username.substring(0, 15);
+
+    // Benzersiz olup olmadığını kontrol et
+    let finalUsername = username;
     let counter = 1;
 
-    while (await db.getOne('SELECT id FROM kullanicilar WHERE kullanici_adi = ?', [username])) {
-        username = `${baseUsername}${counter}`;
+    while (await db.getOne('SELECT id FROM kullanicilar WHERE kullanici_adi = ?', [finalUsername])) {
+        finalUsername = `${username}${counter}`;
         counter++;
     }
 
-    return username;
+    return finalUsername;
 }

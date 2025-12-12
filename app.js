@@ -57,8 +57,9 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/', require('./routes/index'));
+app.use('/', require('./routes/user'));
 app.use('/auth', require('./routes/auth'));
-app.use('/dashboard', require('./routes/dashboard'));
+app.use('/api', require('./routes/dashboard'));
 app.use('/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
 

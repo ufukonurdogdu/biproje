@@ -700,7 +700,7 @@
                         </div>
 
                         <!-- Form -->
-                        <form action="/dashboard/profil" method="POST" id="profileForm">
+                        <form id="profileForm">
                             <div class="form-row single">
                                 <div class="form-group">
                                     <label class="form-label">Ad Soyad</label>
@@ -1206,16 +1206,78 @@
             }, 500);
         });
 
-        document.getElementById('usernameChangeForm').addEventListener('submit', function(e) {
+        document.getElementById('usernameChangeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
             if (!isUsernameAvailable) {
-                e.preventDefault();
                 return false;
             }
-            
+
             const confirmed = confirm('Kullanıcı adınızı değiştirmek için 180 bi! coin harcanacak. Onaylıyor musunuz?');
             if (!confirmed) {
-                e.preventDefault();
                 return false;
+            }
+
+            const yeniKullaniciAdi = document.getElementById('newUsernameInput').value;
+            const submitBtn = document.getElementById('changeUsernameBtn');
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⟳ İşleniyor...';
+
+            try {
+                const response = await fetch('/profil/kullanici-adi-degistir', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ yeni_kullanici_adi: yeniKullaniciAdi })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Bir hata oluştu');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>🪙</span> 180 bi! ile Değiştir';
+                }
+            } catch (err) {
+                alert('Bir hata oluştu, lütfen tekrar deneyin');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>🪙</span> 180 bi! ile Değiştir';
+            }
+        });
+
+        // Profil formu submit
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = {
+                ad_soyad: formData.get('ad_soyad'),
+                bio: formData.get('bio')
+            };
+
+            try {
+                const response = await fetch('/profil/guncelle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message);
+                } else {
+                    alert(result.message || 'Bir hata oluştu');
+                }
+            } catch (err) {
+                alert('Bir hata oluştu, lütfen tekrar deneyin');
             }
         });
     </script>
@@ -1238,7 +1300,7 @@
                     </div>
                 </div>
                 
-                <form id="usernameChangeForm" action="/dashboard/profil/kullanici-adi-degistir" method="POST">
+                <form id="usernameChangeForm">
                     <div class="form-group">
                         <label class="form-label">Yeni Kullanıcı Adı</label>
                         <div class="input-with-icon">
