@@ -1,7 +1,196 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { ensureAuthenticatedAPI, ensureAdminAPI } = require('../middleware/auth');
+const { body, validationResult } = require('express-validator');
+const { ensureAuthenticated, ensureAuthenticatedAPI, ensureAdminAPI } = require('../middleware/auth');
+
+// Kullanıcı adı değiştirme ücreti (bi! coin)
+const USERNAME_CHANGE_COST = 180;
+
+// ==================== VIEW ROUTES ====================
+
+// Dashboard Ana Sayfa
+router.get('/', ensureAuthenticated, async (req, res) => {
+    try {
+        const tahminler = await db.getAll(`
+            SELECT t.*, k.ad as kategori_adi, k.ikon as kategori_ikon
+            FROM tahminler t
+            LEFT JOIN kategoriler k ON t.kategori_id = k.id
+            WHERE t.durum = 'aktif'
+            ORDER BY t.olusturma_tarihi DESC
+            LIMIT 10
+        `);
+
+        res.render('user/dashboard', {
+            title: 'Dashboard - Bilemezsin',
+            layout: 'layouts/user',
+            tahminler
+        });
+    } catch (err) {
+        console.error('Dashboard hatası:', err);
+        req.flash('error_msg', 'Bir hata oluştu');
+        res.redirect('/');
+    }
+});
+
+// Profil Sayfası
+router.get('/profil', ensureAuthenticated, async (req, res) => {
+    try {
+        res.render('user/profil', {
+            title: 'Profil - Bilemezsin',
+            layout: false // profil.ejs kendi layout'unu içeriyor
+        });
+    } catch (err) {
+        console.error('Profil hatası:', err);
+        req.flash('error_msg', 'Bir hata oluştu');
+        res.redirect('/dashboard');
+    }
+});
+
+// Profil Güncelleme (ad_soyad, bio)
+router.post('/profil', ensureAuthenticated, [
+    body('ad_soyad').trim().isLength({ min: 2, max: 50 }).withMessage('İsim 2-50 karakter olmalı'),
+    body('bio').trim().isLength({ max: 200 }).withMessage('Bio en fazla 200 karakter olabilir')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        req.flash('error_msg', errors.array()[0].msg);
+        return res.redirect('/dashboard/profil');
+    }
+
+    try {
+        const { ad_soyad, bio } = req.body;
+        await db.execute(
+            'UPDATE kullanicilar SET ad_soyad = ?, bio = ? WHERE id = ?',
+            [ad_soyad, bio || null, req.user.id]
+        );
+        req.flash('success_msg', 'Profil güncellendi');
+        res.redirect('/dashboard/profil');
+    } catch (err) {
+        console.error('Profil güncelleme hatası:', err);
+        req.flash('error_msg', 'Bir hata oluştu');
+        res.redirect('/dashboard/profil');
+    }
+});
+
+// Kullanıcı Adı Değiştirme (180 bi! coin)
+router.post('/profil/kullanici-adi-degistir', ensureAuthenticated, [
+    body('yeni_kullanici_adi')
+        .trim()
+        .isLength({ min: 3, max: 20 }).withMessage('Kullanıcı adı 3-20 karakter olmalı')
+        .matches(/^[a-z0-9_]+$/).withMessage('Sadece küçük harf, rakam ve alt çizgi kullanılabilir')
+        .toLowerCase()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        req.flash('error_msg', errors.array()[0].msg);
+        return res.redirect('/dashboard/profil');
+    }
+
+    const yeniKullaniciAdi = req.body.yeni_kullanici_adi.toLowerCase();
+
+    try {
+        // Yasaklı kullanıcı adları kontrolü
+        const yasakliAdlar = ['admin', 'administrator', 'moderator', 'mod', 'bilemezsin', 'bilemedin', 'support', 'destek', 'system', 'root', 'null', 'undefined'];
+        if (yasakliAdlar.includes(yeniKullaniciAdi)) {
+            req.flash('error_msg', 'Bu kullanıcı adı kullanılamaz');
+            return res.redirect('/dashboard/profil');
+        }
+
+        // Kullanıcı adı müsait mi kontrol et
+        const mevcutKullanici = await db.getOne(
+            'SELECT id FROM kullanicilar WHERE kullanici_adi = ? AND id != ?',
+            [yeniKullaniciAdi, req.user.id]
+        );
+
+        if (mevcutKullanici) {
+            req.flash('error_msg', 'Bu kullanıcı adı zaten kullanılıyor');
+            return res.redirect('/dashboard/profil');
+        }
+
+        // bi! coin kontrolü
+        if (req.user.bi_coin < USERNAME_CHANGE_COST) {
+            req.flash('error_msg', `Kullanıcı adı değiştirmek için ${USERNAME_CHANGE_COST} bi! coin gerekiyor. Mevcut bakiyeniz: ${req.user.bi_coin} bi!`);
+            return res.redirect('/dashboard/profil');
+        }
+
+        // bi! coin düş ve kullanıcı adını güncelle
+        await db.execute(
+            'UPDATE kullanicilar SET kullanici_adi = ?, bi_coin = bi_coin - ? WHERE id = ?',
+            [yeniKullaniciAdi, USERNAME_CHANGE_COST, req.user.id]
+        );
+
+        // bi! işlem kaydı oluştur
+        const yeniBakiye = req.user.bi_coin - USERNAME_CHANGE_COST;
+        await db.insert(
+            `INSERT INTO bi_islemleri (kullanici_id, miktar, tip, aciklama, bakiye_sonrasi) VALUES (?, ?, ?, ?, ?)`,
+            [req.user.id, -USERNAME_CHANGE_COST, 'harcama', 'Kullanıcı adı değişikliği', yeniBakiye]
+        );
+
+        req.flash('success_msg', `Kullanıcı adınız @${yeniKullaniciAdi} olarak değiştirildi. ${USERNAME_CHANGE_COST} bi! hesabınızdan düşüldü.`);
+        res.redirect('/dashboard/profil');
+
+    } catch (err) {
+        console.error('Kullanıcı adı değiştirme hatası:', err);
+        req.flash('error_msg', 'Bir hata oluştu');
+        res.redirect('/dashboard/profil');
+    }
+});
+
+// Tahminler Sayfası
+router.get('/tahminlerim', ensureAuthenticated, async (req, res) => {
+    try {
+        const tahminlerim = await db.getAll(`
+            SELECT kt.*, t.baslik, t.durum, t.dogru_cevap, k.ad as kategori_adi
+            FROM kullanici_tahminleri kt
+            JOIN tahminler t ON kt.tahmin_id = t.id
+            LEFT JOIN kategoriler k ON t.kategori_id = k.id
+            WHERE kt.kullanici_id = ?
+            ORDER BY kt.olusturma_tarihi DESC
+        `, [req.user.id]);
+
+        res.render('user/tahminlerim', {
+            title: 'Tahminlerim - Bilemezsin',
+            layout: 'layouts/user',
+            tahminlerim
+        });
+    } catch (err) {
+        console.error('Tahminlerim hatası:', err);
+        req.flash('error_msg', 'Bir hata oluştu');
+        res.redirect('/dashboard');
+    }
+});
+
+// Ayarlar Sayfası
+router.get('/ayarlar', ensureAuthenticated, (req, res) => {
+    res.render('user/ayarlar', {
+        title: 'Ayarlar - Bilemezsin',
+        layout: 'layouts/user'
+    });
+});
+
+// Ayarlar Güncelleme
+router.post('/ayarlar', ensureAuthenticated, async (req, res) => {
+    try {
+        const { tema, bildirimler, email_bildirimleri } = req.body;
+        const ayarlar = JSON.stringify({
+            tema: tema || 'auto',
+            bildirimler: bildirimler === 'on',
+            email_bildirimleri: email_bildirimleri === 'on',
+            dil: 'tr'
+        });
+
+        await db.execute('UPDATE kullanicilar SET ayarlar = ? WHERE id = ?', [ayarlar, req.user.id]);
+        req.flash('success_msg', 'Ayarlar kaydedildi');
+        res.redirect('/dashboard/ayarlar');
+    } catch (err) {
+        console.error('Ayarlar güncelleme hatası:', err);
+        req.flash('error_msg', 'Bir hata oluştu');
+        res.redirect('/dashboard/ayarlar');
+    }
+});
+
+// ==================== API ROUTES ====================
 
 // Tahminleri Getir
 router.get('/tahminler', async (req, res) => {
