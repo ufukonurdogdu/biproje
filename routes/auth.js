@@ -184,10 +184,16 @@ async function generateUsernameFromName(adSoyad) {
     return finalUsername;
 }
 
-// Google Auth
-router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
-}));
+// Google Auth (normal giriş veya hesap bağlama)
+router.get('/google', (req, res, next) => {
+    // Kullanıcı zaten giriş yapmışsa, hesap bağlama modunda
+    if (req.user) {
+        req.session.isLinking = true;
+    }
+    passport.authenticate('google', {
+        scope: ['profile', 'email']
+    })(req, res, next);
+});
 
 // Google Callback
 router.get('/google/callback', passport.authenticate('google', {
@@ -204,15 +210,29 @@ router.get('/google/callback', passport.authenticate('google', {
         }
 
         console.log('✅ Session kaydedildi, yönlendiriliyor...');
+
+        // Hesap bağlama işlemi mi kontrol et (session'da isLinking var mı)
+        if (req.session.isLinking) {
+            delete req.session.isLinking;
+            req.flash('success_msg', 'Google hesabınız başarıyla bağlandı!');
+            return res.redirect('/gorevler');
+        }
+
         req.flash('success_msg', 'Google ile giriş başarılı!');
-        res.redirect('/profil');
+        res.redirect('/dashboard');
     });
 });
 
-// Facebook Auth
-router.get('/facebook', passport.authenticate('facebook', {
-    scope: ['email']
-}));
+// Facebook Auth (normal giriş veya hesap bağlama)
+router.get('/facebook', (req, res, next) => {
+    // Kullanıcı zaten giriş yapmışsa, hesap bağlama modunda
+    if (req.user) {
+        req.session.isLinking = true;
+    }
+    passport.authenticate('facebook', {
+        scope: ['email']
+    })(req, res, next);
+});
 
 // Facebook Callback
 router.get('/facebook/callback', passport.authenticate('facebook', {
@@ -229,8 +249,16 @@ router.get('/facebook/callback', passport.authenticate('facebook', {
         }
 
         console.log('✅ Session kaydedildi, yönlendiriliyor...');
+
+        // Hesap bağlama işlemi mi kontrol et (session'da isLinking var mı)
+        if (req.session.isLinking) {
+            delete req.session.isLinking;
+            req.flash('success_msg', 'Facebook hesabınız başarıyla bağlandı!');
+            return res.redirect('/gorevler');
+        }
+
         req.flash('success_msg', 'Facebook ile giriş başarılı!');
-        res.redirect('/profil');
+        res.redirect('/dashboard');
     });
 });
 

@@ -48,9 +48,33 @@ module.exports = function(passport) {
     passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL
-    }, async (accessToken, refreshToken, profile, done) => {
+        callbackURL: process.env.GOOGLE_CALLBACK_URL,
+        passReqToCallback: true
+    }, async (req, accessToken, refreshToken, profile, done) => {
         try {
+            // Kullanıcı zaten giriş yapmışsa, hesabı bağla
+            if (req.user) {
+                // Bu Google hesabı başka birine mi bağlı kontrol et
+                const existingGoogleUser = await db.getOne(
+                    'SELECT id FROM kullanicilar WHERE google_id = ? AND id != ?',
+                    [profile.id, req.user.id]
+                );
+
+                if (existingGoogleUser) {
+                    return done(null, false, { message: 'Bu Google hesabı başka bir kullanıcıya bağlı.' });
+                }
+
+                // Mevcut kullanıcıya Google hesabını bağla
+                await db.execute(
+                    'UPDATE kullanicilar SET google_id = ?, avatar = COALESCE(avatar, ?), son_giris = NOW() WHERE id = ?',
+                    [profile.id, profile.photos[0]?.value || null, req.user.id]
+                );
+
+                const updatedUser = await db.getOne('SELECT * FROM kullanicilar WHERE id = ?', [req.user.id]);
+                return done(null, updatedUser);
+            }
+
+            // Normal giriş akışı
             let user = await db.getOne(
                 'SELECT * FROM kullanicilar WHERE google_id = ?',
                 [profile.id]
@@ -103,9 +127,33 @@ module.exports = function(passport) {
         clientID: process.env.FACEBOOK_APP_ID,
         clientSecret: process.env.FACEBOOK_APP_SECRET,
         callbackURL: process.env.FACEBOOK_CALLBACK_URL,
-        profileFields: ['id', 'displayName', 'email', 'photos']
-    }, async (accessToken, refreshToken, profile, done) => {
+        profileFields: ['id', 'displayName', 'email', 'photos'],
+        passReqToCallback: true
+    }, async (req, accessToken, refreshToken, profile, done) => {
         try {
+            // Kullanıcı zaten giriş yapmışsa, hesabı bağla
+            if (req.user) {
+                // Bu Facebook hesabı başka birine mi bağlı kontrol et
+                const existingFacebookUser = await db.getOne(
+                    'SELECT id FROM kullanicilar WHERE facebook_id = ? AND id != ?',
+                    [profile.id, req.user.id]
+                );
+
+                if (existingFacebookUser) {
+                    return done(null, false, { message: 'Bu Facebook hesabı başka bir kullanıcıya bağlı.' });
+                }
+
+                // Mevcut kullanıcıya Facebook hesabını bağla
+                await db.execute(
+                    'UPDATE kullanicilar SET facebook_id = ?, avatar = COALESCE(avatar, ?), son_giris = NOW() WHERE id = ?',
+                    [profile.id, profile.photos[0]?.value || null, req.user.id]
+                );
+
+                const updatedUser = await db.getOne('SELECT * FROM kullanicilar WHERE id = ?', [req.user.id]);
+                return done(null, updatedUser);
+            }
+
+            // Normal giriş akışı
             let user = await db.getOne(
                 'SELECT * FROM kullanicilar WHERE facebook_id = ?',
                 [profile.id]
@@ -123,7 +171,7 @@ module.exports = function(passport) {
             }
 
             const email = profile.emails ? profile.emails[0].value : `fb_${profile.id}@bilemezsin.com`;
-            
+
             user = await db.getOne(
                 'SELECT * FROM kullanicilar WHERE email = ?',
                 [email]

@@ -163,11 +163,19 @@ router.get('/kullanici-adi-kontrol', async (req, res) => {
             return res.json({ available: false, message: 'Bu kullanıcı adı kullanılamaz' });
         }
 
-        // Veritabanında kontrol
-        const mevcutKullanici = await db.getOne(
-            'SELECT id FROM kullanicilar WHERE kullanici_adi = ?',
-            [username]
-        );
+        // Veritabanında kontrol - giriş yapmış kullanıcının kendi adını hariç tut
+        let mevcutKullanici;
+        if (req.user && req.user.id) {
+            mevcutKullanici = await db.getOne(
+                'SELECT id FROM kullanicilar WHERE kullanici_adi = ? AND id != ?',
+                [username, req.user.id]
+            );
+        } else {
+            mevcutKullanici = await db.getOne(
+                'SELECT id FROM kullanicilar WHERE kullanici_adi = ?',
+                [username]
+            );
+        }
 
         if (mevcutKullanici) {
             return res.json({ available: false, message: 'Bu kullanıcı adı kullanılıyor' });
