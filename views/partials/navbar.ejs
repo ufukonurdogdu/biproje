@@ -15,13 +15,15 @@
             <% if (user) { %>
                 <a href="/dashboard" class="bi-badge">
                     <div class="bi-icon">bi!</div>
-                    <span><%= user.bi_coin.toLocaleString('tr-TR') %></span>
+                    <span><%= user.bi_coin ? user.bi_coin.toLocaleString('tr-TR') : '0' %></span>
                 </a>
-                <a href="/dashboard" class="user-avatar" title="<%= user.ad_soyad %>">
+                <a href="/dashboard" class="user-avatar" title="<%= user.ad_soyad || 'Kullanıcı' %>">
                     <% if (user.avatar) { %>
-                        <img src="<%= user.avatar %>" alt="<%= user.ad_soyad %>">
-                    <% } else { %>
+                        <img src="<%= user.avatar %>" alt="<%= user.ad_soyad || 'Kullanıcı' %>">
+                    <% } else if (user.ad_soyad) { %>
                         <%= user.ad_soyad.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() %>
+                    <% } else { %>
+                        U
                     <% } %>
                 </a>
             <% } else { %>

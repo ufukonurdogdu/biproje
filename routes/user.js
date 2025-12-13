@@ -9,6 +9,8 @@ const KULLANICI_ADI_DEGISTIRME_UCRETI = 180;
 // Profil Sayfası
 router.get('/profil', ensureAuthenticated, async (req, res) => {
     try {
+        console.log('📄 Profil sayfası yükleniyor, user:', req.user?.id);
+
         // Kullanıcı bilgilerini getir
         const kullanici = await db.getOne(`
             SELECT id, ad_soyad, kullanici_adi, email, avatar, bio, rol, bi_coin, seviye, xp,
@@ -18,12 +20,20 @@ router.get('/profil', ensureAuthenticated, async (req, res) => {
             WHERE id = ?
         `, [req.user.id]);
 
+        if (!kullanici) {
+            console.error('❌ Kullanıcı bulunamadı:', req.user.id);
+            req.flash('error_msg', 'Kullanıcı bulunamadı');
+            return res.redirect('/');
+        }
+
+        console.log('✅ Kullanıcı bulundu:', kullanici.kullanici_adi);
+
         // Sıralama
         const siralama = await db.getOne(`
             SELECT COUNT(*) + 1 as siralama
             FROM kullanicilar
             WHERE bi_coin > ? AND banlandi_mi = 0
-        `, [kullanici.bi_coin]);
+        `, [kullanici.bi_coin || 0]);
 
         kullanici.siralama = siralama?.siralama || 0;
         kullanici.dogruluk_orani = kullanici.toplam_tahmin > 0
@@ -37,7 +47,7 @@ router.get('/profil', ensureAuthenticated, async (req, res) => {
             JOIN rozetler r ON kr.rozet_id = r.id
             WHERE kr.kullanici_id = ?
             ORDER BY kr.kazanilma_tarihi DESC
-        `, [req.user.id]);
+        `, [req.user.id]) || [];
 
         // bi! coin geçmişi (son 10)
         const biGecmisi = await db.getAll(`
@@ -45,7 +55,7 @@ router.get('/profil', ensureAuthenticated, async (req, res) => {
             WHERE kullanici_id = ?
             ORDER BY olusturma_tarihi DESC
             LIMIT 10
-        `, [req.user.id]);
+        `, [req.user.id]) || [];
 
         // Son tahminler
         const sonTahminler = await db.getAll(`
@@ -55,7 +65,9 @@ router.get('/profil', ensureAuthenticated, async (req, res) => {
             WHERE kt.kullanici_id = ?
             ORDER BY kt.olusturma_tarihi DESC
             LIMIT 10
-        `, [req.user.id]);
+        `, [req.user.id]) || [];
+
+        console.log('✅ Profil verisi hazır, render ediliyor...');
 
         res.render('user/profil', {
             title: 'Profilim - Bilemezsin',
@@ -67,7 +79,7 @@ router.get('/profil', ensureAuthenticated, async (req, res) => {
             kullaniciAdiDegistirmeUcreti: KULLANICI_ADI_DEGISTIRME_UCRETI
         });
     } catch (err) {
-        console.error('Profil sayfası hatası:', err);
+        console.error('❌ Profil sayfası hatası:', err);
         req.flash('error_msg', 'Profil yüklenirken bir hata oluştu');
         res.redirect('/');
     }

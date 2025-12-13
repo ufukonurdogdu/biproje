@@ -14,7 +14,7 @@
         <div class="nav-right">
             <div class="bi-badge">
                 <div class="bi-icon">bi!</div>
-                <span><%= user ? user.bi_coin.toLocaleString('tr-TR') : '0' %></span>
+                <span><%= user && user.bi_coin ? user.bi_coin.toLocaleString('tr-TR') : '0' %></span>
             </div>
 
             <div class="theme-toggle">
@@ -40,8 +40,10 @@
                 <div class="user-avatar">
                     <% if (user && user.avatar) { %>
                         <img src="<%= user.avatar %>" alt="<%= user.ad_soyad %>">
-                    <% } else if (user) { %>
+                    <% } else if (user && user.ad_soyad) { %>
                         <%= user.ad_soyad.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() %>
+                    <% } else { %>
+                        U
                     <% } %>
                 </div>
                 <div class="dropdown-menu">
