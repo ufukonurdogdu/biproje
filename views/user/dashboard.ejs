@@ -460,13 +460,19 @@
 <!-- Profile Header -->
 <div class="profile-header">
     <div class="profile-avatar-large">
-        <%= user.ad.charAt(0) %><%= user.soyad.charAt(0) %>
+        <%
+            const adSoyad = user.ad_soyad || '';
+            const isimParcalari = adSoyad.split(' ');
+            const ilkHarf = isimParcalari[0] ? isimParcalari[0].charAt(0).toUpperCase() : '';
+            const ikinciHarf = isimParcalari[1] ? isimParcalari[1].charAt(0).toUpperCase() : '';
+        %>
+        <%= ilkHarf %><%= ikinciHarf %>
         <span class="level-indicator"><%= user.seviye || 1 %></span>
     </div>
 
     <div class="profile-info">
-        <h1 class="profile-name"><%= user.ad %> <%= user.soyad %></h1>
-        <p class="profile-username">@<%= user.kullanici_adi %> • Üyelik: <%= new Date(user.created_at).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) %></p>
+        <h1 class="profile-name"><%= user.ad_soyad || 'Kullanıcı' %></h1>
+        <p class="profile-username">@<%= user.kullanici_adi %> • Üyelik: <%= new Date(user.olusturma_tarihi || user.created_at || Date.now()).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) %></p>
 
         <div class="profile-badges">
             <% if (user.premium) { %>
@@ -492,7 +498,7 @@
 
         <div class="profile-stats-row">
             <div class="profile-stat">
-                <div class="profile-stat-value bi"><%= user.bi_coin.toLocaleString('tr-TR') %></div>
+                <div class="profile-stat-value bi"><%= (user.bi_coin || 0).toLocaleString('tr-TR') %></div>
                 <div class="profile-stat-label">bi! Coin</div>
             </div>
             <div class="profile-stat">
@@ -725,7 +731,7 @@
             <div class="wallet-balance">
                 <div class="wallet-amount">
                     <div class="bi-icon" style="width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: white;">bi!</div>
-                    <%= user.bi_coin.toLocaleString('tr-TR') %>
+                    <%= (user.bi_coin || 0).toLocaleString('tr-TR') %>
                 </div>
                 <div class="wallet-label">Toplam Bakiye</div>
             </div>
