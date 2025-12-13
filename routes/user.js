@@ -59,7 +59,7 @@ router.get('/profil', ensureAuthenticated, async (req, res) => {
 
         res.render('user/profil', {
             title: 'Profilim - Bilemezsin',
-            layout: 'layouts/main',
+            layout: false,
             user: kullanici,
             rozetler,
             biGecmisi,

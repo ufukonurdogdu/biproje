@@ -59,13 +59,19 @@ app.use((req, res, next) => {
 app.use('/', require('./routes/index'));
 app.use('/', require('./routes/user'));
 app.use('/auth', require('./routes/auth'));
-app.use('/api', require('./routes/dashboard'));
-app.use('/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
+app.use('/admin', require('./routes/admin'));
 
 // 404 Handler
 app.use((req, res) => {
-    res.status(404).render('errors/404', { 
+    // API istekleri için JSON response
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({
+            success: false,
+            message: 'Endpoint bulunamadı'
+        });
+    }
+    res.status(404).render('errors/404', {
         title: 'Sayfa Bulunamadı',
         layout: 'layouts/main'
     });
@@ -73,8 +79,24 @@ app.use((req, res) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render('errors/500', { 
+    // Hata logla
+    console.error('❌ Hata:', {
+        message: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+        path: req.path,
+        method: req.method,
+        timestamp: new Date().toISOString()
+    });
+
+    // API istekleri için JSON response
+    if (req.path.startsWith('/api/')) {
+        return res.status(err.status || 500).json({
+            success: false,
+            message: process.env.NODE_ENV === 'development' ? err.message : 'Sunucu hatası'
+        });
+    }
+
+    res.status(err.status || 500).render('errors/500', {
         title: 'Sunucu Hatası',
         layout: 'layouts/main'
     });
