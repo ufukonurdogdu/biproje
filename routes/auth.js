@@ -199,13 +199,8 @@ router.get('/google/callback', passport.authenticate('google', {
         if (err) {
             console.error('Session kaydetme hatası:', err);
         }
-        
-        // Kullanıcı adı onaylanmamışsa yönlendir
-        if (!req.user.kullanici_adi_onaylandi) {
-            return res.redirect('/auth/kullanici-adi-belirle');
-        }
         req.flash('success_msg', 'Google ile giriş başarılı!');
-        res.redirect('/dashboard');
+        res.redirect('/dashboard/profil');
     });
 });
 
@@ -224,13 +219,8 @@ router.get('/facebook/callback', passport.authenticate('facebook', {
         if (err) {
             console.error('Session kaydetme hatası:', err);
         }
-        
-        // Kullanıcı adı onaylanmamışsa yönlendir
-        if (!req.user.kullanici_adi_onaylandi) {
-            return res.redirect('/auth/kullanici-adi-belirle');
-        }
         req.flash('success_msg', 'Facebook ile giriş başarılı!');
-        res.redirect('/dashboard');
+        res.redirect('/dashboard/profil');
     });
 });
 
