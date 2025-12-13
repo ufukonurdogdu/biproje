@@ -194,14 +194,17 @@ router.get('/google/callback', passport.authenticate('google', {
     failureRedirect: '/auth/giris',
     failureFlash: true
 }), (req, res) => {
+    console.log('✅ Google OAuth başarılı, user:', req.user?.id, req.user?.kullanici_adi);
+
     // Session'ı kaydet ve sonra yönlendir
     req.session.save((err) => {
         if (err) {
-            console.error('Session kaydetme hatası:', err);
+            console.error('❌ Session kaydetme hatası:', err);
+            return res.redirect('/auth/giris');
         }
 
+        console.log('✅ Session kaydedildi, yönlendiriliyor...');
         req.flash('success_msg', 'Google ile giriş başarılı!');
-        // Profil sayfasına yönlendir
         res.redirect('/profil');
     });
 });
@@ -216,14 +219,17 @@ router.get('/facebook/callback', passport.authenticate('facebook', {
     failureRedirect: '/auth/giris',
     failureFlash: true
 }), (req, res) => {
+    console.log('✅ Facebook OAuth başarılı, user:', req.user?.id, req.user?.kullanici_adi);
+
     // Session'ı kaydet ve sonra yönlendir
     req.session.save((err) => {
         if (err) {
-            console.error('Session kaydetme hatası:', err);
+            console.error('❌ Session kaydetme hatası:', err);
+            return res.redirect('/auth/giris');
         }
 
+        console.log('✅ Session kaydedildi, yönlendiriliyor...');
         req.flash('success_msg', 'Facebook ile giriş başarılı!');
-        // Profil sayfasına yönlendir
         res.redirect('/profil');
     });
 });

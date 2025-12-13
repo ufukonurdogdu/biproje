@@ -14,6 +14,9 @@ require('./config/passport')(passport);
 
 const app = express();
 
+// Trust proxy (Apache/Nginx arkasında çalışıyorsa gerekli)
+app.set('trust proxy', 1);
+
 // EJS Setup
 app.use(expressLayouts);
 app.set('view engine', 'ejs');
@@ -34,7 +37,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 gün
     }
 }));
 

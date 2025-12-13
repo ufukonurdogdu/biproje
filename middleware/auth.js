@@ -1,5 +1,8 @@
 // Giriş yapmış kullanıcı kontrolü
 const ensureAuthenticated = (req, res, next) => {
+    // Debug log
+    console.log('🔐 Auth check:', req.path, 'isAuth:', req.isAuthenticated(), 'user:', req.user?.id);
+
     if (req.isAuthenticated()) {
         if (req.user.banlandi_mi) {
             req.logout((err) => {
@@ -9,14 +12,16 @@ const ensureAuthenticated = (req, res, next) => {
             });
             return;
         }
-        
+
         // Kullanıcı adı onaylanmamışsa kullanıcı adı belirleme sayfasına yönlendir
         if (!req.user.kullanici_adi_onaylandi && !req.path.includes('/kullanici-adi-belirle')) {
+            console.log('⚠️ Kullanıcı adı onaylanmamış, yönlendiriliyor...');
             return res.redirect('/auth/kullanici-adi-belirle');
         }
-        
+
         return next();
     }
+    console.log('❌ Authenticated değil, giriş sayfasına yönlendiriliyor');
     req.flash('error_msg', 'Bu sayfayı görüntülemek için giriş yapmalısınız');
     res.redirect('/auth/giris');
 };
