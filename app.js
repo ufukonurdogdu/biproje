@@ -66,6 +66,7 @@ app.use('/', require('./routes/user'));
 app.use('/auth', require('./routes/auth'));
 app.use('/api', require('./routes/api'));
 app.use('/admin', require('./routes/admin'));
+app.use('/gorevler', require('./routes/gorevler'));
 
 // 404 Handler
 app.use((req, res) => {

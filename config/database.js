@@ -44,7 +44,7 @@ const createTables = async () => {
                 avatar VARCHAR(500),
                 bio TEXT,
                 rol ENUM('kullanici', 'moderator', 'admin', 'superadmin') DEFAULT 'kullanici',
-                bi_coin INT DEFAULT 1000,
+                bi_coin INT DEFAULT 50,
                 seviye INT DEFAULT 1,
                 xp INT DEFAULT 0,
                 toplam_tahmin INT DEFAULT 0,
@@ -174,16 +174,31 @@ const createTables = async () => {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 ad VARCHAR(100) NOT NULL,
                 aciklama TEXT,
-                tip ENUM('gunluk', 'haftalik', 'ozel') DEFAULT 'gunluk',
+                tip ENUM('gunluk', 'haftalik', 'ozel', 'sosyal', 'baslangic') DEFAULT 'gunluk',
                 kosul_tip VARCHAR(50),
                 kosul_deger INT,
                 bi_odul INT DEFAULT 100,
                 xp_odul INT DEFAULT 50,
+                ikon VARCHAR(50) DEFAULT '🎯',
+                link VARCHAR(500),
+                sira INT DEFAULT 0,
+                tekrarlanabilir TINYINT(1) DEFAULT 0,
                 aktif_mi TINYINT(1) DEFAULT 1,
                 olusturma_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
         console.log('✅ gorevler tablosu hazır');
+
+        // Gorevler tablosu migration - yeni alanlar ekle
+        try {
+            await connection.query(`ALTER TABLE gorevler ADD COLUMN IF NOT EXISTS ikon VARCHAR(50) DEFAULT '🎯'`);
+            await connection.query(`ALTER TABLE gorevler ADD COLUMN IF NOT EXISTS link VARCHAR(500)`);
+            await connection.query(`ALTER TABLE gorevler ADD COLUMN IF NOT EXISTS sira INT DEFAULT 0`);
+            await connection.query(`ALTER TABLE gorevler ADD COLUMN IF NOT EXISTS tekrarlanabilir TINYINT(1) DEFAULT 0`);
+            await connection.query(`ALTER TABLE gorevler MODIFY COLUMN tip ENUM('gunluk', 'haftalik', 'ozel', 'sosyal', 'baslangic') DEFAULT 'gunluk'`);
+        } catch (e) {
+            // MySQL'de IF NOT EXISTS yok, hata göz ardı edilebilir
+        }
 
         // Kullanici Gorevleri tablosu
         await connection.query(`
@@ -332,13 +347,19 @@ const createTables = async () => {
 
         // Varsayılan görevleri ekle
         await connection.query(`
-            INSERT IGNORE INTO gorevler (id, ad, aciklama, tip, kosul_tip, kosul_deger, bi_odul, xp_odul) VALUES
-            (1, '5 Tahmin Yap', 'Bugün 5 tahmin yap', 'gunluk', 'gunluk_tahmin', 5, 100, 50),
-            (2, 'Giriş Yap', 'Bugün giriş yap', 'gunluk', 'giris', 1, 50, 25),
-            (3, '3 Doğru Tahmin', 'Bugün 3 doğru tahmin yap', 'gunluk', 'gunluk_dogru', 3, 200, 100),
-            (4, '20 Tahmin Yap', 'Bu hafta 20 tahmin yap', 'haftalik', 'haftalik_tahmin', 20, 500, 250),
-            (5, 'Arkadaş Davet Et', '3 arkadaş davet et', 'haftalik', 'davet', 3, 1500, 500),
-            (6, 'Top 100', 'Sıralamada ilk 100e gir', 'ozel', 'siralama', 100, 5000, 2000)
+            INSERT IGNORE INTO gorevler (id, ad, aciklama, tip, kosul_tip, kosul_deger, bi_odul, xp_odul, ikon, link, sira) VALUES
+            (1, '5 Tahmin Yap', 'Bugün 5 tahmin yap', 'gunluk', 'gunluk_tahmin', 5, 100, 50, '🎯', NULL, 1),
+            (2, 'Giriş Yap', 'Bugün giriş yap', 'gunluk', 'giris', 1, 50, 25, '📅', NULL, 2),
+            (3, '3 Doğru Tahmin', 'Bugün 3 doğru tahmin yap', 'gunluk', 'gunluk_dogru', 3, 200, 100, '✅', NULL, 3),
+            (4, '20 Tahmin Yap', 'Bu hafta 20 tahmin yap', 'haftalik', 'haftalik_tahmin', 20, 500, 250, '🔥', NULL, 1),
+            (5, 'Arkadaş Davet Et', '3 arkadaş davet et', 'haftalik', 'davet', 3, 1500, 500, '👥', NULL, 2),
+            (6, 'Top 100', 'Sıralamada ilk 100e gir', 'ozel', 'siralama', 100, 5000, 2000, '🏆', NULL, 1),
+            (7, 'Google Hesabı Bağla', 'Google hesabını bağlayarak hızlı giriş yap', 'baslangic', 'google_bagli', 1, 300, 100, '🔴', '/auth/google', 1),
+            (8, 'Facebook Hesabı Bağla', 'Facebook hesabını bağlayarak hızlı giriş yap', 'baslangic', 'facebook_bagli', 1, 300, 100, '🔵', '/auth/facebook', 2),
+            (9, 'Twitter Takip Et', '@bilemezsin hesabını takip et', 'sosyal', 'twitter_takip', 1, 100, 50, '🐦', 'https://twitter.com/bilemezsin', 1),
+            (10, 'Instagram Takip Et', '@bilemezsin hesabını takip et', 'sosyal', 'instagram_takip', 1, 100, 50, '📸', 'https://instagram.com/bilemezsin', 2),
+            (11, 'Profili Tamamla', 'Profil bilgilerini doldur', 'baslangic', 'profil_tamamla', 1, 200, 100, '👤', '/profil', 3),
+            (12, 'İlk Tahminini Yap', 'Platformda ilk tahminini yap', 'baslangic', 'ilk_tahmin', 1, 150, 75, '🎯', '/tahminler', 4)
         `);
         console.log('✅ Varsayılan görevler eklendi');
 
