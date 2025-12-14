@@ -149,9 +149,26 @@ router.post('/tamamla/:gorevId', ensureAuthenticated, async (req, res) => {
 
             case 'twitter_takip':
             case 'instagram_takip':
-                // Sosyal medya takipleri icin kullanici beyani - guven sistemi
-                // (Gercek API entegrasyonu icin OAuth gerekli)
-                tamamlanabilir = true;
+                // Sosyal medya takipleri icin link tiklanmis olmali ve sure gecmis olmali
+                const linkKey = `sosyal_link_${gorevId}`;
+                const linkTiklanmaZamani = req.session[linkKey];
+
+                if (!linkTiklanmaZamani) {
+                    hata = 'Önce sosyal medya linkine tıklayın ve hesabı takip edin';
+                } else {
+                    // 15 saniye gecmis olmali
+                    const gecenSure = Date.now() - linkTiklanmaZamani;
+                    const beklenenSure = 15 * 1000; // 15 saniye
+
+                    if (gecenSure < beklenenSure) {
+                        const kalanSaniye = Math.ceil((beklenenSure - gecenSure) / 1000);
+                        hata = `Lütfen ${kalanSaniye} saniye daha bekleyin`;
+                    } else {
+                        tamamlanabilir = true;
+                        // Session'dan temizle
+                        delete req.session[linkKey];
+                    }
+                }
                 break;
 
             default:
@@ -176,6 +193,55 @@ router.post('/tamamla/:gorevId', ensureAuthenticated, async (req, res) => {
         });
     } catch (err) {
         console.error('Gorev tamamlama hatasi:', err);
+        res.json({ success: false, message: 'Bir hata olustu' });
+    }
+});
+
+// Sosyal medya linki tiklandiginda kayit
+router.post('/link-tiklandi/:gorevId', ensureAuthenticated, async (req, res) => {
+    try {
+        const gorevId = parseInt(req.params.gorevId);
+
+        // Gorevi kontrol et
+        const gorev = await db.getOne('SELECT * FROM gorevler WHERE id = ? AND aktif_mi = 1', [gorevId]);
+        if (!gorev) {
+            return res.json({ success: false, message: 'Gorev bulunamadi' });
+        }
+
+        // Sadece sosyal medya gorevleri icin gecerli
+        if (!['twitter_takip', 'instagram_takip'].includes(gorev.kosul_tip)) {
+            return res.json({ success: false, message: 'Bu gorev icin link dogrulamasi gerekli degil' });
+        }
+
+        // Daha once tamamlanmis mi kontrol et
+        const mevcutGorev = await db.getOne(
+            'SELECT * FROM kullanici_gorevleri WHERE kullanici_id = ? AND gorev_id = ? AND tamamlandi_mi = 1',
+            [req.user.id, gorevId]
+        );
+
+        if (mevcutGorev) {
+            return res.json({ success: false, message: 'Bu gorev zaten tamamlanmis' });
+        }
+
+        // Session'a tiklama zamanini kaydet
+        const linkKey = `sosyal_link_${gorevId}`;
+        req.session[linkKey] = Date.now();
+
+        // Session'i kaydet
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session kaydetme hatasi:', err);
+                return res.json({ success: false, message: 'Bir hata olustu' });
+            }
+
+            res.json({
+                success: true,
+                message: 'Link tiklama kaydedildi. Hesabi takip ettikten sonra 15 saniye bekleyin.',
+                bekleme_suresi: 15
+            });
+        });
+    } catch (err) {
+        console.error('Link tiklama hatasi:', err);
         res.json({ success: false, message: 'Bir hata olustu' });
     }
 });

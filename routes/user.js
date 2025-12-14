@@ -1,7 +1,46 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const db = require('../config/database');
 const { ensureAuthenticated } = require('../middleware/auth');
+
+// Multer ayarları - profil resmi yükleme
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        const uploadDir = path.join(__dirname, '../public/uploads/avatars');
+        // Klasör yoksa oluştur
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function(req, file, cb) {
+        // Benzersiz dosya adı: user_id_timestamp.ext
+        const ext = path.extname(file.originalname).toLowerCase();
+        const filename = `user_${req.user.id}_${Date.now()}${ext}`;
+        cb(null, filename);
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    // Sadece resim dosyaları
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Sadece resim dosyaları yüklenebilir (JPG, PNG, GIF, WebP)'), false);
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 2 * 1024 * 1024 // 2MB limit
+    }
+});
 
 // Kullanıcı adı değiştirme ücreti (bi! coin)
 const KULLANICI_ADI_DEGISTIRME_UCRETI = 180;
@@ -195,6 +234,84 @@ router.post('/profil/guncelle', ensureAuthenticated, async (req, res) => {
 
     } catch (err) {
         console.error('❌ Profil güncelleme hatası:', err);
+        res.json({ success: false, message: 'Bir hata oluştu' });
+    }
+});
+
+// Profil Resmi Yükleme
+router.post('/profil/avatar-yukle', ensureAuthenticated, upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.json({ success: false, message: 'Lütfen bir resim seçin' });
+        }
+
+        console.log('📸 Avatar yükleniyor:', req.file.filename);
+        const kullaniciId = req.user.id;
+
+        // Eski avatar'ı sil (varsa ve local ise)
+        const eskiKullanici = await db.getOne('SELECT avatar FROM kullanicilar WHERE id = ?', [kullaniciId]);
+        if (eskiKullanici && eskiKullanici.avatar && eskiKullanici.avatar.includes('/uploads/avatars/')) {
+            const eskiDosya = path.join(__dirname, '../public', eskiKullanici.avatar);
+            if (fs.existsSync(eskiDosya)) {
+                fs.unlinkSync(eskiDosya);
+                console.log('🗑️ Eski avatar silindi:', eskiDosya);
+            }
+        }
+
+        // Yeni avatar URL'i
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+        // Veritabanını güncelle
+        await db.execute(
+            'UPDATE kullanicilar SET avatar = ? WHERE id = ?',
+            [avatarUrl, kullaniciId]
+        );
+
+        console.log('✅ Avatar başarıyla güncellendi:', avatarUrl);
+        res.json({
+            success: true,
+            message: 'Profil resmi başarıyla güncellendi!',
+            avatar: avatarUrl
+        });
+
+    } catch (err) {
+        console.error('❌ Avatar yükleme hatası:', err);
+        // Multer hataları için özel mesajlar
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.json({ success: false, message: 'Dosya boyutu çok büyük (maksimum 2MB)' });
+        }
+        res.json({ success: false, message: err.message || 'Bir hata oluştu' });
+    }
+});
+
+// Profil Resmi Silme
+router.post('/profil/avatar-sil', ensureAuthenticated, async (req, res) => {
+    try {
+        const kullaniciId = req.user.id;
+
+        // Mevcut avatar'ı al
+        const kullanici = await db.getOne('SELECT avatar FROM kullanicilar WHERE id = ?', [kullaniciId]);
+
+        // Eğer local bir avatar varsa dosyayı sil
+        if (kullanici && kullanici.avatar && kullanici.avatar.includes('/uploads/avatars/')) {
+            const dosyaYolu = path.join(__dirname, '../public', kullanici.avatar);
+            if (fs.existsSync(dosyaYolu)) {
+                fs.unlinkSync(dosyaYolu);
+                console.log('🗑️ Avatar dosyası silindi:', dosyaYolu);
+            }
+        }
+
+        // Veritabanında avatar'ı NULL yap
+        await db.execute(
+            'UPDATE kullanicilar SET avatar = NULL WHERE id = ?',
+            [kullaniciId]
+        );
+
+        console.log('✅ Avatar başarıyla silindi');
+        res.json({ success: true, message: 'Profil resmi kaldırıldı' });
+
+    } catch (err) {
+        console.error('❌ Avatar silme hatası:', err);
         res.json({ success: false, message: 'Bir hata oluştu' });
     }
 });

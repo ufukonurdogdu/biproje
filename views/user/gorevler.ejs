@@ -654,7 +654,7 @@
             </div>
             <div class="task-grid">
                 <% gorevler.sosyal.forEach(function(gorev) { %>
-                <div class="task-card <%= gorev.tamamlandi_mi ? 'completed' : '' %>" data-gorev-id="<%= gorev.id %>">
+                <div class="task-card <%= gorev.tamamlandi_mi ? 'completed' : '' %>" data-gorev-id="<%= gorev.id %>" data-gorev-link="<%= gorev.link %>">
                     <div class="task-header">
                         <div class="task-icon sosyal"><%= gorev.ikon %></div>
                         <div class="task-info">
@@ -670,10 +670,15 @@
                         <% if (gorev.tamamlandi_mi) { %>
                             <button class="task-btn success" disabled>Tamamlandi</button>
                         <% } else { %>
-                            <a href="<%= gorev.link %>" target="_blank" class="task-btn secondary">Takip Et</a>
-                            <button class="task-btn primary" onclick="tamamlaGorev(<%= gorev.id %>)">Takip Ettim</button>
+                            <button class="task-btn secondary sosyal-link-btn" data-gorev-id="<%= gorev.id %>" data-link="<%= gorev.link %>">
+                                Takip Et
+                            </button>
+                            <button class="task-btn primary sosyal-tamamla-btn" data-gorev-id="<%= gorev.id %>" disabled style="opacity: 0.5;">
+                                Önce Takip Et
+                            </button>
                         <% } %>
                     </div>
+                    <div class="sosyal-countdown" id="countdown-<%= gorev.id %>" style="display: none; margin-top: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);"></div>
                 </div>
                 <% }); %>
             </div>
@@ -819,6 +824,9 @@
         const themeMode = localStorage.getItem('themeMode') || 'dark';
         html.setAttribute('data-theme', themeMode);
 
+        // Sosyal medya gorev geri sayımlari (localStorage'da sakliyoruz)
+        const sosyalTimers = JSON.parse(localStorage.getItem('sosyalTimers') || '{}');
+
         // Toast goster
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
@@ -836,7 +844,113 @@
             }, 3000);
         }
 
-        // Gorev tamamla
+        // Sosyal medya linki tiklandi
+        async function sosyalLinkTiklandi(gorevId, link) {
+            const linkBtn = document.querySelector(`.sosyal-link-btn[data-gorev-id="${gorevId}"]`);
+            const tamamlaBtn = document.querySelector(`.sosyal-tamamla-btn[data-gorev-id="${gorevId}"]`);
+            const countdownEl = document.getElementById(`countdown-${gorevId}`);
+
+            // Linki yeni sekmede ac
+            window.open(link, '_blank');
+
+            // Backend'e bildir
+            try {
+                const response = await fetch(`/gorevler/link-tiklandi/${gorevId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // localStorage'a kaydet
+                    const baslangicZamani = Date.now();
+                    sosyalTimers[gorevId] = baslangicZamani;
+                    localStorage.setItem('sosyalTimers', JSON.stringify(sosyalTimers));
+
+                    // Geri sayimi baslat
+                    baslatGeriSayim(gorevId, 15);
+                    showToast('Hesabı takip edin, 15 saniye sonra onaylayabilirsiniz', 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast('Bir hata oluştu', 'error');
+            }
+        }
+
+        // Geri sayim baslat
+        function baslatGeriSayim(gorevId, saniye) {
+            const tamamlaBtn = document.querySelector(`.sosyal-tamamla-btn[data-gorev-id="${gorevId}"]`);
+            const countdownEl = document.getElementById(`countdown-${gorevId}`);
+
+            if (!tamamlaBtn || !countdownEl) return;
+
+            countdownEl.style.display = 'block';
+
+            const interval = setInterval(() => {
+                if (saniye <= 0) {
+                    clearInterval(interval);
+                    countdownEl.innerHTML = '<span style="color: var(--success);">✓ Şimdi onaylayabilirsiniz!</span>';
+                    tamamlaBtn.disabled = false;
+                    tamamlaBtn.style.opacity = '1';
+                    tamamlaBtn.textContent = 'Takip Ettim';
+                    return;
+                }
+
+                countdownEl.innerHTML = `⏳ Bekleniyor... ${saniye} saniye`;
+                saniye--;
+            }, 1000);
+        }
+
+        // Sosyal gorev tamamla
+        async function sosyalGorevTamamla(gorevId) {
+            const card = document.querySelector(`[data-gorev-id="${gorevId}"]`);
+            const btn = document.querySelector(`.sosyal-tamamla-btn[data-gorev-id="${gorevId}"]`);
+
+            if (!btn || btn.disabled) return;
+
+            // Loading state
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="spinner"></div>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`/gorevler/tamamla/${gorevId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+
+                    // localStorage'dan temizle
+                    delete sosyalTimers[gorevId];
+                    localStorage.setItem('sosyalTimers', JSON.stringify(sosyalTimers));
+
+                    // Karti guncelle
+                    card.classList.add('completed');
+                    const footer = card.querySelector('.task-footer');
+                    footer.innerHTML = '<button class="task-btn success" disabled>Tamamlandi</button>';
+                    const countdownEl = document.getElementById(`countdown-${gorevId}`);
+                    if (countdownEl) countdownEl.style.display = 'none';
+
+                    // Sayfayi yenile
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(data.message, 'error');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                showToast('Bir hata olustu', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Gorev tamamla (diger gorevler icin)
         async function tamamlaGorev(gorevId) {
             const card = document.querySelector(`[data-gorev-id="${gorevId}"]`);
             const btn = card.querySelector('.task-btn.primary');
@@ -881,6 +995,50 @@
                 btn.disabled = false;
             }
         }
+
+        // Sayfa yuklendiginde sosyal butonlara event listener ekle ve devam eden geri sayimlari kontrol et
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sosyal link butonlarina click event ekle
+            document.querySelectorAll('.sosyal-link-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const gorevId = this.dataset.gorevId;
+                    const link = this.dataset.link;
+                    sosyalLinkTiklandi(gorevId, link);
+                });
+            });
+
+            // Sosyal tamamla butonlarina click event ekle
+            document.querySelectorAll('.sosyal-tamamla-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const gorevId = this.dataset.gorevId;
+                    sosyalGorevTamamla(gorevId);
+                });
+            });
+
+            // Onceden baslatilmis geri sayimlari devam ettir
+            Object.keys(sosyalTimers).forEach(gorevId => {
+                const baslangicZamani = sosyalTimers[gorevId];
+                const gecenSure = Math.floor((Date.now() - baslangicZamani) / 1000);
+                const kalanSure = 15 - gecenSure;
+
+                const tamamlaBtn = document.querySelector(`.sosyal-tamamla-btn[data-gorev-id="${gorevId}"]`);
+                const countdownEl = document.getElementById(`countdown-${gorevId}`);
+
+                if (tamamlaBtn && countdownEl) {
+                    if (kalanSure <= 0) {
+                        // Sure dolmus, butonu aktif et
+                        countdownEl.style.display = 'block';
+                        countdownEl.innerHTML = '<span style="color: var(--success);">✓ Şimdi onaylayabilirsiniz!</span>';
+                        tamamlaBtn.disabled = false;
+                        tamamlaBtn.style.opacity = '1';
+                        tamamlaBtn.textContent = 'Takip Ettim';
+                    } else {
+                        // Geri sayimi devam ettir
+                        baslatGeriSayim(gorevId, kalanSure);
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>

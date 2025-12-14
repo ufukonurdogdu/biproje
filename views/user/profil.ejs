@@ -1039,23 +1039,30 @@
                         <!-- Avatar -->
                         <div class="avatar-section">
                             <div class="avatar-preview" id="avatarPreview">
-                                AY
+                                <% if (user && user.avatar) { %>
+                                    <img src="<%= user.avatar %>" alt="Avatar">
+                                <% } else if (user && user.ad_soyad) { %>
+                                    <%= user.ad_soyad.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() %>
+                                <% } else { %>
+                                    U
+                                <% } %>
                             </div>
                             <div class="avatar-actions">
                                 <h3>Profil Fotoğrafı</h3>
                                 <p>JPG, PNG veya GIF. Maksimum 2MB.</p>
                                 <div class="avatar-buttons">
-                                    <input type="file" id="avatarInput" accept="image/*" hidden>
-                                    <button class="btn-upload" onclick="document.getElementById('avatarInput').click()">
+                                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+                                    <button type="button" class="btn-upload" id="avatarUploadBtn" onclick="document.getElementById('avatarInput').click()">
                                         Fotoğraf Yükle
                                     </button>
-                                    <button class="btn-remove" onclick="removeAvatar()">Kaldır</button>
+                                    <button type="button" class="btn-remove" id="avatarRemoveBtn" onclick="removeAvatar()">Kaldır</button>
                                 </div>
+                                <div id="avatarStatus" style="margin-top: 8px; font-size: 13px;"></div>
                             </div>
                         </div>
 
                         <!-- Form -->
-                        <form id="profileForm">
+                        <form id="profileForm" method="POST" action="javascript:void(0);" onsubmit="return false;">
                             <div class="form-row single">
                                 <div class="form-group">
                                     <label class="form-label">Ad Soyad</label>
@@ -1404,50 +1411,60 @@
     <%- include('../partials/footer') %>
 
     <script>
-        // Section göster
+        // Global fonksiyonlar (HTML onclick için)
         function showSection(sectionId) {
-            // Nav items
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             event.target.closest('.nav-item').classList.add('active');
-            
-            // Sections
             document.querySelectorAll('.section-card').forEach(section => section.classList.remove('active'));
             document.getElementById('section-' + sectionId).classList.add('active');
         }
 
-        // Avatar değiştir
-        document.getElementById('avatarInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('avatarPreview').innerHTML = '<img src="' + e.target.result + '" alt="Avatar">';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+        async function removeAvatar() {
+            if (!confirm('Profil resminizi kaldırmak istediğinizden emin misiniz?')) return;
 
-        function removeAvatar() {
-            document.getElementById('avatarPreview').innerHTML = 'AY';
+            const removeBtn = document.getElementById('avatarRemoveBtn');
+            const statusEl = document.getElementById('avatarStatus');
+            removeBtn.disabled = true;
+            removeBtn.textContent = 'Kaldırılıyor...';
+            statusEl.textContent = '';
+
+            try {
+                const response = await fetch('/profil/avatar-sil', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Avatar'ı baş harflerle değiştir
+                    const adSoyad = '<%= typeof user !== "undefined" && user ? user.ad_soyad : "U" %>';
+                    const initials = adSoyad.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    document.getElementById('avatarPreview').innerHTML = initials;
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.textContent = '✓ Profil resmi kaldırıldı';
+                } else {
+                    statusEl.style.color = 'var(--danger)';
+                    statusEl.textContent = '✕ ' + (data.message || 'Bir hata oluştu');
+                }
+            } catch (err) {
+                console.error('Avatar silme hatası:', err);
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = '✕ Bir hata oluştu';
+            } finally {
+                removeBtn.disabled = false;
+                removeBtn.textContent = 'Kaldır';
+            }
         }
 
-        // Şifre gücü kontrolü
         function checkPasswordStrength() {
             const password = document.getElementById('newPassword').value;
-            const bars = [
-                document.getElementById('str1'),
-                document.getElementById('str2'),
-                document.getElementById('str3'),
-                document.getElementById('str4')
-            ];
+            const bars = [document.getElementById('str1'), document.getElementById('str2'), document.getElementById('str3'), document.getElementById('str4')];
             const text = document.getElementById('passwordText');
-            
             let strength = 0;
             if (password.length >= 8) strength++;
             if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
             if (password.match(/[0-9]/)) strength++;
             if (password.match(/[^a-zA-Z0-9]/)) strength++;
-            
             bars.forEach((bar, index) => {
                 bar.className = 'strength-bar';
                 if (index < strength) {
@@ -1456,23 +1473,10 @@
                     else bar.classList.add('strong');
                 }
             });
-            
             const messages = ['', 'Zayıf', 'Orta', 'İyi', 'Güçlü'];
             text.textContent = messages[strength] || 'En az 8 karakter, büyük/küçük harf ve rakam içermeli';
         }
 
-        // Form submit - artık gerçek form olarak çalışıyor
-        // document.getElementById('profileForm').addEventListener('submit', function(e) {
-        //     e.preventDefault();
-        //     alert('Profil bilgileri kaydedildi!');
-        // });
-
-        document.getElementById('securityForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('Şifre güncellendi!');
-        });
-
-        // Hesap silme onayı
         function confirmDeleteAccount() {
             if (confirm('Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
                 if (confirm('Son kez onaylayın: Tüm verileriniz silinecek!')) {
@@ -1481,48 +1485,12 @@
             }
         }
 
-        // Tüm oturumları sonlandır
         function logoutAllSessions() {
             if (confirm('Bu cihaz dahil tüm oturumlar sonlandırılacak. Devam etmek istiyor musunuz?')) {
                 alert('Tüm oturumlar sonlandırıldı. Yeniden giriş yapmanız gerekecek.');
             }
         }
 
-        // Theme Management
-        const html = document.documentElement;
-        const lightBtn = document.getElementById('lightBtn');
-        const darkBtn = document.getElementById('darkBtn');
-
-        let themeMode = localStorage.getItem('themeMode') || 'dark';
-
-        function applyTheme() {
-            html.setAttribute('data-theme', themeMode);
-            updateButtonStates();
-        }
-
-        function updateButtonStates() {
-            if (lightBtn) lightBtn.classList.remove('active');
-            if (darkBtn) darkBtn.classList.remove('active');
-
-            if (themeMode === 'light' && lightBtn) {
-                lightBtn.classList.add('active');
-            } else if (darkBtn) {
-                darkBtn.classList.add('active');
-            }
-        }
-
-        function setThemeMode(mode) {
-            themeMode = mode;
-            localStorage.setItem('themeMode', mode);
-            applyTheme();
-        }
-
-        if (lightBtn) lightBtn.addEventListener('click', () => setThemeMode('light'));
-        if (darkBtn) darkBtn.addEventListener('click', () => setThemeMode('dark'));
-
-        applyTheme();
-
-        // Kullanıcı Adı Değiştirme Modal
         function openUsernameModal() {
             document.getElementById('usernameModal').style.display = 'flex';
             document.getElementById('newUsernameInput').focus();
@@ -1536,158 +1504,208 @@
             document.getElementById('changeUsernameBtn').disabled = true;
         }
 
-        // Live kullanıcı adı kontrolü
-        let usernameCheckTimeout;
-        let isUsernameAvailable = false;
+        // DOM hazır olduğunda çalışacak kodlar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Profil sayfası yüklendi');
 
-        document.getElementById('newUsernameInput').addEventListener('input', function(e) {
-            let value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-            e.target.value = value;
+            // Theme Management
+            const html = document.documentElement;
+            const lightBtn = document.getElementById('lightBtn');
+            const darkBtn = document.getElementById('darkBtn');
+            let themeMode = localStorage.getItem('themeMode') || 'dark';
 
-            clearTimeout(usernameCheckTimeout);
-            const availabilityEl = document.getElementById('usernameAvailability');
-            const submitBtn = document.getElementById('changeUsernameBtn');
-            
-            isUsernameAvailable = false;
-            submitBtn.disabled = true;
-
-            if (value.length === 0) {
-                availabilityEl.textContent = '';
-                availabilityEl.className = 'availability-msg';
-                return;
+            function applyTheme() {
+                html.setAttribute('data-theme', themeMode);
+                if (lightBtn) lightBtn.classList.remove('active');
+                if (darkBtn) darkBtn.classList.remove('active');
+                if (themeMode === 'light' && lightBtn) lightBtn.classList.add('active');
+                else if (darkBtn) darkBtn.classList.add('active');
             }
 
-            if (value.length < 3) {
-                availabilityEl.textContent = '✕ En az 3 karakter olmalı';
-                availabilityEl.className = 'availability-msg error';
-                return;
-            }
+            if (lightBtn) lightBtn.addEventListener('click', () => { themeMode = 'light'; localStorage.setItem('themeMode', 'light'); applyTheme(); });
+            if (darkBtn) darkBtn.addEventListener('click', () => { themeMode = 'dark'; localStorage.setItem('themeMode', 'dark'); applyTheme(); });
+            applyTheme();
 
-            if (value.length > 20) {
-                availabilityEl.textContent = '✕ En fazla 20 karakter olabilir';
-                availabilityEl.className = 'availability-msg error';
-                return;
-            }
+            // Avatar input - dosya yükleme
+            const avatarInput = document.getElementById('avatarInput');
+            if (avatarInput) {
+                avatarInput.addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
 
-            availabilityEl.textContent = '⟳ Kontrol ediliyor...';
-            availabilityEl.className = 'availability-msg checking';
+                    // Dosya boyutu kontrolü (2MB)
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('Dosya boyutu çok büyük. Maksimum 2MB yükleyebilirsiniz.');
+                        return;
+                    }
 
-            usernameCheckTimeout = setTimeout(() => {
-                fetch('/api/kullanici-adi-kontrol?kullanici_adi=' + encodeURIComponent(value))
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.available) {
-                            availabilityEl.textContent = '✓ Kullanıcı adı müsait';
-                            availabilityEl.className = 'availability-msg success';
-                            isUsernameAvailable = true;
-                            submitBtn.disabled = false;
+                    // Dosya tipi kontrolü
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('Sadece resim dosyaları yüklenebilir (JPG, PNG, GIF, WebP)');
+                        return;
+                    }
+
+                    const uploadBtn = document.getElementById('avatarUploadBtn');
+                    const statusEl = document.getElementById('avatarStatus');
+                    uploadBtn.disabled = true;
+                    uploadBtn.textContent = 'Yükleniyor...';
+                    statusEl.textContent = '';
+
+                    // Önce preview göster
+                    const reader = new FileReader();
+                    reader.onload = function(re) {
+                        document.getElementById('avatarPreview').innerHTML = '<img src="' + re.target.result + '" alt="Avatar">';
+                    };
+                    reader.readAsDataURL(file);
+
+                    // FormData ile yükle
+                    const formData = new FormData();
+                    formData.append('avatar', file);
+
+                    try {
+                        const response = await fetch('/profil/avatar-yukle', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            statusEl.style.color = 'var(--success)';
+                            statusEl.textContent = '✓ Profil resmi güncellendi';
+                            // Navbar'daki avatar'ı da güncelle
+                            const navAvatar = document.querySelector('.user-avatar img');
+                            if (navAvatar) {
+                                navAvatar.src = data.avatar;
+                            } else {
+                                const userAvatarDiv = document.querySelector('.user-avatar');
+                                if (userAvatarDiv) {
+                                    userAvatarDiv.innerHTML = '<img src="' + data.avatar + '" alt="Avatar">';
+                                }
+                            }
                         } else {
-                            availabilityEl.textContent = '✕ ' + (data.message || 'Bu kullanıcı adı kullanılamaz');
-                            availabilityEl.className = 'availability-msg error';
-                            isUsernameAvailable = false;
-                            submitBtn.disabled = true;
+                            statusEl.style.color = 'var(--danger)';
+                            statusEl.textContent = '✕ ' + (data.message || 'Yükleme başarısız');
                         }
-                    })
-                    .catch(err => {
-                        availabilityEl.textContent = '! Kontrol edilemedi';
-                        availabilityEl.className = 'availability-msg error';
-                    });
-            }, 500);
-        });
-
-        document.getElementById('usernameChangeForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            if (!isUsernameAvailable) {
-                return false;
-            }
-
-            const confirmed = confirm('Kullanıcı adınızı değiştirmek için 180 bi! coin harcanacak. Onaylıyor musunuz?');
-            if (!confirmed) {
-                return false;
-            }
-
-            const yeniKullaniciAdi = document.getElementById('newUsernameInput').value;
-            const submitBtn = document.getElementById('changeUsernameBtn');
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '⟳ İşleniyor...';
-
-            try {
-                const response = await fetch('/profil/kullanici-adi-degistir', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ yeni_kullanici_adi: yeniKullaniciAdi })
+                    } catch (err) {
+                        console.error('Avatar yükleme hatası:', err);
+                        statusEl.style.color = 'var(--danger)';
+                        statusEl.textContent = '✕ Bir hata oluştu';
+                    } finally {
+                        uploadBtn.disabled = false;
+                        uploadBtn.textContent = 'Fotoğraf Yükle';
+                        avatarInput.value = ''; // Reset input
+                    }
                 });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    alert(data.message);
-                    window.location.reload();
-                } else {
-                    alert(data.message || 'Bir hata oluştu');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>🪙</span> 180 bi! ile Değiştir';
-                }
-            } catch (err) {
-                alert('Bir hata oluştu, lütfen tekrar deneyin');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>🪙</span> 180 bi! ile Değiştir';
             }
-        });
 
-        // Profil formu submit
-        document.getElementById('profileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Kaydediliyor...';
-            submitBtn.disabled = true;
-
-            const formData = new FormData(this);
-            const data = {
-                ad_soyad: formData.get('ad_soyad'),
-                bio: formData.get('bio')
-            };
-
-            console.log('📤 Gönderilen veri:', data);
-
-            try {
-                const response = await fetch('/profil/guncelle', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
+            // Security form
+            const securityForm = document.getElementById('securityForm');
+            if (securityForm) {
+                securityForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    alert('Şifre güncellendi!');
                 });
+            }
 
-                console.log('📥 Response status:', response.status);
-                const result = await response.json();
-                console.log('📥 Response data:', result);
+            // Username change form
+            let usernameCheckTimeout;
+            let isUsernameAvailable = false;
+            const newUsernameInput = document.getElementById('newUsernameInput');
 
-                if (result.success) {
-                    // Başarı mesajı göster
-                    submitBtn.innerHTML = '✓ Kaydedildi!';
-                    submitBtn.style.background = 'var(--success)';
-                    setTimeout(() => {
+            if (newUsernameInput) {
+                newUsernameInput.addEventListener('input', function(e) {
+                    let value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    e.target.value = value;
+                    clearTimeout(usernameCheckTimeout);
+                    const availabilityEl = document.getElementById('usernameAvailability');
+                    const submitBtn = document.getElementById('changeUsernameBtn');
+                    isUsernameAvailable = false;
+                    submitBtn.disabled = true;
+                    if (value.length === 0) { availabilityEl.textContent = ''; return; }
+                    if (value.length < 3) { availabilityEl.textContent = '✕ En az 3 karakter olmalı'; availabilityEl.className = 'availability-msg error'; return; }
+                    if (value.length > 20) { availabilityEl.textContent = '✕ En fazla 20 karakter olabilir'; availabilityEl.className = 'availability-msg error'; return; }
+                    availabilityEl.textContent = '⟳ Kontrol ediliyor...';
+                    usernameCheckTimeout = setTimeout(() => {
+                        fetch('/api/kullanici-adi-kontrol?kullanici_adi=' + encodeURIComponent(value))
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.available) { availabilityEl.textContent = '✓ Kullanıcı adı müsait'; availabilityEl.className = 'availability-msg success'; isUsernameAvailable = true; submitBtn.disabled = false; }
+                                else { availabilityEl.textContent = '✕ ' + (data.message || 'Bu kullanıcı adı kullanılamaz'); availabilityEl.className = 'availability-msg error'; }
+                            })
+                            .catch(() => { availabilityEl.textContent = '! Kontrol edilemedi'; availabilityEl.className = 'availability-msg error'; });
+                    }, 500);
+                });
+            }
+
+            const usernameChangeForm = document.getElementById('usernameChangeForm');
+            if (usernameChangeForm) {
+                usernameChangeForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    if (!isUsernameAvailable) return false;
+                    if (!confirm('Kullanıcı adınızı değiştirmek için 180 bi! coin harcanacak. Onaylıyor musunuz?')) return false;
+                    const yeniKullaniciAdi = document.getElementById('newUsernameInput').value;
+                    const submitBtn = document.getElementById('changeUsernameBtn');
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '⟳ İşleniyor...';
+                    try {
+                        const response = await fetch('/profil/kullanici-adi-degistir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ yeni_kullanici_adi: yeniKullaniciAdi }) });
+                        const data = await response.json();
+                        if (data.success) { alert(data.message); window.location.reload(); }
+                        else { alert(data.message || 'Bir hata oluştu'); submitBtn.disabled = false; submitBtn.innerHTML = '<span>🪙</span> 180 bi! ile Değiştir'; }
+                    } catch (err) { alert('Bir hata oluştu, lütfen tekrar deneyin'); submitBtn.disabled = false; submitBtn.innerHTML = '<span>🪙</span> 180 bi! ile Değiştir'; }
+                });
+            }
+
+            // *** PROFIL FORMU - EN ÖNEMLİ ***
+            const profileForm = document.getElementById('profileForm');
+            if (profileForm) {
+                console.log('✅ profileForm bulundu, event listener ekleniyor...');
+                profileForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('📤 Form submit tetiklendi');
+
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = 'Kaydediliyor...';
+                    submitBtn.disabled = true;
+
+                    const data = {
+                        ad_soyad: this.querySelector('[name="ad_soyad"]').value,
+                        bio: this.querySelector('[name="bio"]').value
+                    };
+                    console.log('📤 Gönderilen veri:', data);
+
+                    try {
+                        const response = await fetch('/profil/guncelle', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        console.log('📥 Response status:', response.status);
+                        const result = await response.json();
+                        console.log('📥 Response data:', result);
+
+                        if (result.success) {
+                            submitBtn.innerHTML = '✓ Kaydedildi!';
+                            submitBtn.style.background = 'var(--success)';
+                            setTimeout(() => { submitBtn.innerHTML = originalText; submitBtn.style.background = ''; submitBtn.disabled = false; }, 2000);
+                        } else {
+                            alert(result.message || 'Bir hata oluştu');
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        }
+                    } catch (err) {
+                        console.error('❌ Fetch hatası:', err);
+                        alert('Bir hata oluştu, lütfen tekrar deneyin');
                         submitBtn.innerHTML = originalText;
-                        submitBtn.style.background = '';
                         submitBtn.disabled = false;
-                    }, 2000);
-                } else {
-                    alert(result.message || 'Bir hata oluştu');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
-            } catch (err) {
-                console.error('❌ Fetch hatası:', err);
-                alert('Bir hata oluştu, lütfen tekrar deneyin');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
+                    }
+                    return false;
+                });
+            } else {
+                console.error('❌ profileForm bulunamadı!');
             }
         });
     </script>
