@@ -353,4 +353,313 @@ router.get('/dashboard', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// Tahminler Sayfası
+router.get('/tahminler', ensureAuthenticated, async (req, res) => {
+    try {
+        const kategoriSlug = req.query.kategori;
+        const sayfa = parseInt(req.query.sayfa) || 1;
+        const limit = 12;
+        const offset = (sayfa - 1) * limit;
+
+        let whereClause = "WHERE t.durum = 'aktif'";
+        let params = [];
+
+        if (kategoriSlug) {
+            whereClause += " AND k.slug = ?";
+            params.push(kategoriSlug);
+        }
+
+        const tahminler = await db.getAll(`
+            SELECT t.*, k.ad as kategori_adi, k.ikon as kategori_ikon, k.renk as kategori_renk,
+                   (SELECT COUNT(*) FROM kullanici_tahminleri WHERE tahmin_id = t.id) as katilimci_sayisi
+            FROM tahminler t
+            LEFT JOIN kategoriler k ON t.kategori_id = k.id
+            ${whereClause}
+            ORDER BY t.olusturma_tarihi DESC
+            LIMIT ${limit} OFFSET ${offset}
+        `, params);
+
+        const kategoriler = await db.getAll(
+            'SELECT * FROM kategoriler WHERE aktif_mi = 1 ORDER BY sira'
+        );
+
+        // Kullanıcının tahminlerini al
+        const kullaniciTahminleri = await db.getAll(
+            'SELECT tahmin_id, secim FROM kullanici_tahminleri WHERE kullanici_id = ?',
+            [req.user.id]
+        );
+        const tahminMap = {};
+        kullaniciTahminleri.forEach(kt => tahminMap[kt.tahmin_id] = kt.secim);
+
+        res.render('user/tahminler', {
+            title: 'Tahminler - Bilemezsin',
+            layout: false,
+            tahminler,
+            kategoriler,
+            kategoriSlug,
+            kullaniciTahminleri: tahminMap,
+            sayfa,
+            limit
+        });
+    } catch (err) {
+        console.error('Tahminler hatası:', err);
+        res.redirect('/dashboard');
+    }
+});
+
+// Tahmin Yap
+router.post('/tahminler/yap', ensureAuthenticated, async (req, res) => {
+    try {
+        const { tahmin_id, secim } = req.body;
+        const kullaniciId = req.user.id;
+
+        // Tahmin var mı kontrol et
+        const tahmin = await db.getOne(
+            "SELECT * FROM tahminler WHERE id = ? AND durum = 'aktif'",
+            [tahmin_id]
+        );
+
+        if (!tahmin) {
+            return res.json({ success: false, message: 'Tahmin bulunamadı veya kapalı' });
+        }
+
+        // Daha önce tahmin yapılmış mı
+        const mevcutTahmin = await db.getOne(
+            'SELECT * FROM kullanici_tahminleri WHERE kullanici_id = ? AND tahmin_id = ?',
+            [kullaniciId, tahmin_id]
+        );
+
+        if (mevcutTahmin) {
+            return res.json({ success: false, message: 'Bu tahmin için zaten oy verdiniz' });
+        }
+
+        // Tahmini kaydet
+        await db.insert(
+            'INSERT INTO kullanici_tahminleri (kullanici_id, tahmin_id, secim) VALUES (?, ?, ?)',
+            [kullaniciId, tahmin_id, secim]
+        );
+
+        // Kullanıcı istatistiklerini güncelle
+        await db.execute(
+            'UPDATE kullanicilar SET toplam_tahmin = toplam_tahmin + 1 WHERE id = ?',
+            [kullaniciId]
+        );
+
+        // Tahmin katılım sayısını güncelle
+        await db.execute(
+            'UPDATE tahminler SET katilim_sayisi = katilim_sayisi + 1 WHERE id = ?',
+            [tahmin_id]
+        );
+
+        // Oranları güncelle (evet/hayır için)
+        if (tahmin.tip === 'evet_hayir') {
+            const counts = await db.getOne(`
+                SELECT
+                    SUM(CASE WHEN secim = 'evet' THEN 1 ELSE 0 END) as evet,
+                    SUM(CASE WHEN secim = 'hayir' THEN 1 ELSE 0 END) as hayir,
+                    COUNT(*) as toplam
+                FROM kullanici_tahminleri WHERE tahmin_id = ?
+            `, [tahmin_id]);
+
+            if (counts.toplam > 0) {
+                const evetOrani = Math.round((counts.evet / counts.toplam) * 100);
+                const hayirOrani = 100 - evetOrani;
+                await db.execute(
+                    'UPDATE tahminler SET evet_orani = ?, hayir_orani = ? WHERE id = ?',
+                    [evetOrani, hayirOrani, tahmin_id]
+                );
+            }
+        }
+
+        res.json({ success: true, message: 'Tahmininiz kaydedildi!' });
+    } catch (err) {
+        console.error('Tahmin yapma hatası:', err);
+        res.json({ success: false, message: 'Bir hata oluştu' });
+    }
+});
+
+// Sıralama Sayfası
+router.get('/siralama', ensureAuthenticated, async (req, res) => {
+    try {
+        const tip = req.query.tip || 'bi_coin';
+        const sayfa = parseInt(req.query.sayfa) || 1;
+        const limit = 50;
+        const offset = (sayfa - 1) * limit;
+
+        let orderBy = 'bi_coin DESC';
+        if (tip === 'dogru') orderBy = 'dogru_tahmin DESC';
+        if (tip === 'seviye') orderBy = 'seviye DESC, xp DESC';
+        if (tip === 'seri') orderBy = 'max_seri DESC';
+
+        const kullanicilar = await db.getAll(`
+            SELECT id, ad_soyad, kullanici_adi, avatar, bi_coin, seviye, xp,
+                   toplam_tahmin, dogru_tahmin, seri, max_seri,
+                   CASE WHEN toplam_tahmin > 0 THEN ROUND((dogru_tahmin / toplam_tahmin) * 100) ELSE 0 END as dogruluk
+            FROM kullanicilar
+            WHERE banlandi_mi = 0
+            ORDER BY ${orderBy}
+            LIMIT ${limit} OFFSET ${offset}
+        `);
+
+        // Kullanıcının sıralamasını bul
+        const kullaniciSirasi = await db.getOne(`
+            SELECT COUNT(*) + 1 as sira FROM kullanicilar
+            WHERE banlandi_mi = 0 AND bi_coin > (SELECT bi_coin FROM kullanicilar WHERE id = ?)
+        `, [req.user.id]);
+
+        res.render('user/siralama', {
+            title: 'Sıralama - Bilemezsin',
+            layout: false,
+            kullanicilar,
+            tip,
+            sayfa,
+            kullaniciSirasi: kullaniciSirasi?.sira || 0,
+            offset
+        });
+    } catch (err) {
+        console.error('Sıralama hatası:', err);
+        res.redirect('/dashboard');
+    }
+});
+
+// Mağaza Sayfası
+router.get('/magaza', ensureAuthenticated, async (req, res) => {
+    try {
+        const urunler = await db.getAll(`
+            SELECT * FROM magaza_urunleri
+            WHERE aktif_mi = 1
+            ORDER BY tip, fiyat_bi
+        `);
+
+        // Kullanıcının satın aldıklarını al
+        const satinAlmalar = await db.getAll(
+            'SELECT urun_id FROM satin_almalar WHERE kullanici_id = ? AND durum != "iptal"',
+            [req.user.id]
+        );
+        const satinAlinanlar = satinAlmalar.map(s => s.urun_id);
+
+        res.render('user/magaza', {
+            title: 'Mağaza - Bilemezsin',
+            layout: false,
+            urunler,
+            satinAlinanlar
+        });
+    } catch (err) {
+        console.error('Mağaza hatası:', err);
+        res.redirect('/dashboard');
+    }
+});
+
+// Ürün Satın Al
+router.post('/magaza/satin-al', ensureAuthenticated, async (req, res) => {
+    try {
+        const { urun_id } = req.body;
+        const kullaniciId = req.user.id;
+
+        // Ürün bilgisi
+        const urun = await db.getOne(
+            'SELECT * FROM magaza_urunleri WHERE id = ? AND aktif_mi = 1',
+            [urun_id]
+        );
+
+        if (!urun) {
+            return res.json({ success: false, message: 'Ürün bulunamadı' });
+        }
+
+        // Stok kontrolü
+        if (urun.stok === 0) {
+            return res.json({ success: false, message: 'Ürün stokta yok' });
+        }
+
+        // Kullanıcı bakiyesi
+        const kullanici = await db.getOne(
+            'SELECT bi_coin FROM kullanicilar WHERE id = ?',
+            [kullaniciId]
+        );
+
+        if (kullanici.bi_coin < urun.fiyat_bi) {
+            return res.json({ success: false, message: 'Yetersiz bi! coin bakiyesi' });
+        }
+
+        // Tekrarlı satın alma kontrolü (dijital ürünler için)
+        if (urun.tip === 'dijital' || urun.tip === 'premium') {
+            const mevcutSatinAlma = await db.getOne(
+                'SELECT * FROM satin_almalar WHERE kullanici_id = ? AND urun_id = ? AND durum != "iptal"',
+                [kullaniciId, urun_id]
+            );
+            if (mevcutSatinAlma) {
+                return res.json({ success: false, message: 'Bu ürünü zaten satın aldınız' });
+            }
+        }
+
+        // Bakiyeyi düş
+        const yeniBakiye = kullanici.bi_coin - urun.fiyat_bi;
+        await db.execute(
+            'UPDATE kullanicilar SET bi_coin = ? WHERE id = ?',
+            [yeniBakiye, kullaniciId]
+        );
+
+        // Satın alma kaydı
+        await db.insert(
+            'INSERT INTO satin_almalar (kullanici_id, urun_id, toplam_bi, durum) VALUES (?, ?, ?, ?)',
+            [kullaniciId, urun_id, urun.fiyat_bi, urun.tip === 'dijital' ? 'teslim_edildi' : 'beklemede']
+        );
+
+        // Stok düş
+        if (urun.stok > 0) {
+            await db.execute(
+                'UPDATE magaza_urunleri SET stok = stok - 1 WHERE id = ?',
+                [urun_id]
+            );
+        }
+
+        // bi! işlem kaydı
+        await db.insert(
+            'INSERT INTO bi_islemleri (kullanici_id, miktar, tip, aciklama, bakiye_sonrasi) VALUES (?, ?, ?, ?, ?)',
+            [kullaniciId, -urun.fiyat_bi, 'harcama', `Mağaza: ${urun.ad}`, yeniBakiye]
+        );
+
+        // Socket.io ile bildir
+        if (global.updateUserBiCoin) {
+            global.updateUserBiCoin(kullaniciId, yeniBakiye);
+        }
+
+        res.json({
+            success: true,
+            message: 'Satın alma başarılı!',
+            yeni_bakiye: yeniBakiye
+        });
+    } catch (err) {
+        console.error('Satın alma hatası:', err);
+        res.json({ success: false, message: 'Bir hata oluştu' });
+    }
+});
+
+// Bildirimler Sayfası
+router.get('/bildirimler', ensureAuthenticated, async (req, res) => {
+    try {
+        const bildirimler = await db.getAll(`
+            SELECT * FROM bildirimler
+            WHERE kullanici_id = ?
+            ORDER BY olusturma_tarihi DESC
+            LIMIT 50
+        `, [req.user.id]);
+
+        // Okunmamışları okundu işaretle
+        await db.execute(
+            'UPDATE bildirimler SET okundu_mu = 1 WHERE kullanici_id = ? AND okundu_mu = 0',
+            [req.user.id]
+        );
+
+        res.render('user/bildirimler', {
+            title: 'Bildirimler - Bilemezsin',
+            layout: false,
+            bildirimler
+        });
+    } catch (err) {
+        console.error('Bildirimler hatası:', err);
+        res.redirect('/dashboard');
+    }
+});
+
 module.exports = router;

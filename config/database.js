@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 
 // Connection Pool
 const pool = mysql.createPool({
@@ -362,6 +363,43 @@ const createTables = async () => {
             (12, 'İlk Tahminini Yap', 'Platformda ilk tahminini yap', 'baslangic', 'ilk_tahmin', 1, 150, 75, '🎯', '/tahminler', 4)
         `);
         console.log('✅ Varsayılan görevler eklendi');
+
+        // Varsayılan mağaza ürünleri ekle
+        await connection.query(`
+            INSERT IGNORE INTO magaza_urunleri (id, ad, aciklama, tip, fiyat_bi, stok, gorsel) VALUES
+            (1, 'Premium Üyelik (1 Ay)', 'Reklamsız deneyim, özel rozetler ve 2x XP kazanımı', 'premium', 5000, -1, '/images/shop/premium.png'),
+            (2, '500 bi! Coin', 'Hesabınıza 500 bi! coin yüklenir', 'dijital', 0, -1, '/images/shop/coin.png'),
+            (3, 'Özel Profil Çerçevesi', 'Profilinize özel altın çerçeve', 'dijital', 2000, -1, '/images/shop/frame.png'),
+            (4, 'Çekiliş Bileti', 'Aylık büyük ödül çekilişine katılım', 'cekilis', 1000, 100, '/images/shop/ticket.png'),
+            (5, 'Bilemezsin T-Shirt', 'Özel tasarım Bilemezsin t-shirt', 'fiziksel', 8000, 50, '/images/shop/tshirt.png'),
+            (6, 'XP Boost (7 Gün)', '7 gün boyunca 2x XP kazanın', 'dijital', 1500, -1, '/images/shop/xp-boost.png'),
+            (7, 'İsim Rengi Değiştir', 'Kullanıcı adınızı renkli yapın', 'dijital', 3000, -1, '/images/shop/name-color.png'),
+            (8, 'VIP Rozeti', 'Profilinizde VIP rozeti gösterin', 'dijital', 10000, -1, '/images/shop/vip.png')
+        `);
+        console.log('✅ Varsayılan mağaza ürünleri eklendi');
+
+        // Varsayılan admin kullanıcısı oluştur
+        const adminExists = await connection.query('SELECT id FROM kullanicilar WHERE email = ?', ['admin@bilemezsin.com']);
+        if (adminExists[0].length === 0) {
+            const hashedPassword = await bcrypt.hash('Admin123!', 10);
+            await connection.query(`
+                INSERT INTO kullanicilar (email, sifre, ad_soyad, kullanici_adi, rol, bi_coin, dogrulanmis_mi, giris_yontemi)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, ['admin@bilemezsin.com', hashedPassword, 'Admin', 'admin', 'superadmin', 100000, 1, 'local']);
+            console.log('✅ Varsayılan admin kullanıcısı oluşturuldu (admin@bilemezsin.com / Admin123!)');
+        }
+
+        // Örnek tahminler ekle
+        await connection.query(`
+            INSERT IGNORE INTO tahminler (id, kategori_id, baslik, aciklama, tip, bi_odul, durum, bitis_tarihi, olusturan_id) VALUES
+            (1, 1, 'Galatasaray bu hafta maçını kazanır mı?', 'Süper Lig 15. hafta maçı', 'evet_hayir', 100, 'aktif', DATE_ADD(NOW(), INTERVAL 3 DAY), 1),
+            (2, 1, 'Fenerbahçe vs Beşiktaş derbi skoru ne olur?', 'Süper Lig derbisi', 'coktan_secmeli', 150, 'aktif', DATE_ADD(NOW(), INTERVAL 5 DAY), 1),
+            (3, 2, 'Dolar 35 TL yi geçer mi bu ay?', 'Ekonomi tahmini', 'evet_hayir', 200, 'aktif', DATE_ADD(NOW(), INTERVAL 15 DAY), 1),
+            (4, 3, 'Apple yeni iPhone modelini bu çeyrekte tanıtır mı?', 'Teknoloji haberleri', 'evet_hayir', 120, 'aktif', DATE_ADD(NOW(), INTERVAL 30 DAY), 1),
+            (5, 4, 'Bu yılın en çok izlenen filmi hangisi olur?', 'Sinema tahminleri', 'coktan_secmeli', 300, 'aktif', DATE_ADD(NOW(), INTERVAL 60 DAY), 1),
+            (6, 1, 'Milli takım Euro 2024te kaçıncı olur?', 'Milli takım performansı', 'coktan_secmeli', 500, 'aktif', DATE_ADD(NOW(), INTERVAL 90 DAY), 1)
+        `);
+        console.log('✅ Örnek tahminler eklendi');
 
         connection.release();
         return true;

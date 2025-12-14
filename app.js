@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const session = require('express-session');
 const passport = require('passport');
 const flash = require('connect-flash');
@@ -13,6 +15,16 @@ const db = require('./config/database');
 require('./config/passport')(passport);
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: process.env.BASE_URL,
+        methods: ["GET", "POST"]
+    }
+});
+
+// Socket.io'yu global yap
+app.set('io', io);
 
 // Trust proxy (Apache/Nginx arkasında çalışıyorsa gerekli)
 app.set('trust proxy', 1);
@@ -125,15 +137,59 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
+// Socket.io bağlantı yönetimi
+io.on('connection', (socket) => {
+    console.log('🔌 Yeni bağlantı:', socket.id);
+
+    // Kullanıcı odasına katıl
+    socket.on('join', (userId) => {
+        if (userId) {
+            socket.join(`user_${userId}`);
+            console.log(`👤 Kullanıcı ${userId} odaya katıldı`);
+        }
+    });
+
+    // Genel odaya katıl (sıralama vb. için)
+    socket.on('joinLeaderboard', () => {
+        socket.join('leaderboard');
+    });
+
+    socket.on('disconnect', () => {
+        console.log('🔌 Bağlantı koptu:', socket.id);
+    });
+});
+
+// bi! coin güncelleme fonksiyonu (global)
+global.updateUserBiCoin = async (userId, newBalance) => {
+    io.to(`user_${userId}`).emit('biCoinUpdate', { bi_coin: newBalance });
+};
+
+// Sıralama güncelleme fonksiyonu (global)
+global.updateLeaderboard = async () => {
+    try {
+        const topUsers = await db.getAll(`
+            SELECT id, kullanici_adi, ad_soyad, avatar, bi_coin, seviye, dogru_tahmin, toplam_tahmin
+            FROM kullanicilar
+            WHERE banlandi_mi = 0
+            ORDER BY bi_coin DESC
+            LIMIT 100
+        `);
+        io.to('leaderboard').emit('leaderboardUpdate', topUsers);
+    } catch (err) {
+        console.error('Sıralama güncelleme hatası:', err);
+    }
+};
+
 // Veritabanı tablolarını oluştur ve sunucuyu başlat
 const initializeApp = async () => {
     try {
         await db.createTables();
         console.log('✅ Veritabanı tabloları hazır');
-        
-        app.listen(PORT, () => {
+
+        server.listen(PORT, () => {
             console.log(`🚀 Sunucu ${PORT} portunda çalışıyor`);
             console.log(`🌐 ${process.env.BASE_URL}`);
+            console.log(`🔌 Socket.io aktif`);
         });
     } catch (err) {
         console.error('❌ Başlatma hatası:', err);
@@ -143,4 +199,4 @@ const initializeApp = async () => {
 
 initializeApp();
 
-module.exports = app;
+module.exports = { app, io };
