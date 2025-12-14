@@ -1643,11 +1643,18 @@
         document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Kaydediliyor...';
+            submitBtn.disabled = true;
+
             const formData = new FormData(this);
             const data = {
                 ad_soyad: formData.get('ad_soyad'),
                 bio: formData.get('bio')
             };
+
+            console.log('📤 Gönderilen veri:', data);
 
             try {
                 const response = await fetch('/profil/guncelle', {
@@ -1658,15 +1665,29 @@
                     body: JSON.stringify(data)
                 });
 
+                console.log('📥 Response status:', response.status);
                 const result = await response.json();
+                console.log('📥 Response data:', result);
 
                 if (result.success) {
-                    alert(result.message);
+                    // Başarı mesajı göster
+                    submitBtn.innerHTML = '✓ Kaydedildi!';
+                    submitBtn.style.background = 'var(--success)';
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.style.background = '';
+                        submitBtn.disabled = false;
+                    }, 2000);
                 } else {
                     alert(result.message || 'Bir hata oluştu');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                 }
             } catch (err) {
+                console.error('❌ Fetch hatası:', err);
                 alert('Bir hata oluştu, lütfen tekrar deneyin');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         });
     </script>

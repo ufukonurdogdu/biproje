@@ -170,26 +170,31 @@ router.post('/profil/kullanici-adi-degistir', ensureAuthenticated, async (req, r
 // Profil Güncelleme (ad_soyad, bio)
 router.post('/profil/guncelle', ensureAuthenticated, async (req, res) => {
     try {
+        console.log('📝 Profil güncelleme isteği:', req.body);
         const { ad_soyad, bio } = req.body;
         const kullaniciId = req.user.id;
 
         // Validasyon
         if (!ad_soyad || ad_soyad.trim().length < 2 || ad_soyad.trim().length > 50) {
+            console.log('❌ Validasyon hatası: ad_soyad geçersiz');
             return res.json({ success: false, message: 'İsim 2-50 karakter arasında olmalıdır' });
         }
 
         // Bio max 200 karakter
         const temizBio = bio ? bio.substring(0, 200) : '';
 
+        console.log('💾 Veritabanı güncelleniyor:', { ad_soyad: ad_soyad.trim(), bio: temizBio, kullaniciId });
+
         await db.execute(
             'UPDATE kullanicilar SET ad_soyad = ?, bio = ? WHERE id = ?',
             [ad_soyad.trim(), temizBio, kullaniciId]
         );
 
+        console.log('✅ Profil başarıyla güncellendi');
         res.json({ success: true, message: 'Profiliniz güncellendi!' });
 
     } catch (err) {
-        console.error('Profil güncelleme hatası:', err);
+        console.error('❌ Profil güncelleme hatası:', err);
         res.json({ success: false, message: 'Bir hata oluştu' });
     }
 });

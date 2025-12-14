@@ -50,13 +50,28 @@ app.use(passport.session());
 // Flash Messages
 app.use(flash());
 
-// Global Variables
-app.use((req, res, next) => {
+// Global Variables - Güncel kullanıcı verisi için
+app.use(async (req, res, next) => {
     res.locals.success_msg = req.flash('success_msg');
     res.locals.error_msg = req.flash('error_msg');
     res.locals.error = req.flash('error');
-    res.locals.user = req.user || null;
     res.locals.baseUrl = process.env.BASE_URL;
+
+    // Kullanıcı giriş yapmışsa güncel veriyi çek
+    if (req.user && req.user.id) {
+        try {
+            const freshUser = await db.getOne(
+                'SELECT id, ad_soyad, kullanici_adi, email, avatar, bio, rol, bi_coin, seviye, xp, google_id, facebook_id FROM kullanicilar WHERE id = ?',
+                [req.user.id]
+            );
+            res.locals.user = freshUser || req.user;
+        } catch (err) {
+            res.locals.user = req.user;
+        }
+    } else {
+        res.locals.user = null;
+    }
+
     next();
 });
 
