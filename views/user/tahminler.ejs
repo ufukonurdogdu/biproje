@@ -1,959 +1,178 @@
-<%- contentFor('body') %>
-
-<style>
-    /* Page Header */
-    .page-header {
-        margin-bottom: 1.5rem;
-    }
-
-    .page-title {
-        font-size: 1.5rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .page-title svg {
-        width: 28px;
-        height: 28px;
-        color: var(--accent-primary);
-    }
-
-    .page-subtitle {
-        color: var(--text-muted);
-        font-size: 0.95rem;
-    }
-
-    /* Filters Section */
-    .filters-section {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-        margin-bottom: 1.5rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: center;
-    }
-
-    .filter-group {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .filter-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--text-secondary);
-    }
-
-    .filter-select {
-        padding: 0.5rem 2rem 0.5rem 0.75rem;
-        background: var(--bg-input);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 0.85rem;
-        color: var(--text-primary);
-        cursor: pointer;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 0.5rem center;
-    }
-
-    .filter-select:focus {
-        outline: none;
-        border-color: var(--accent-primary);
-    }
-
-    .search-input {
-        flex: 1;
-        min-width: 200px;
-        padding: 0.5rem 1rem;
-        background: var(--bg-input);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 0.85rem;
-        color: var(--text-primary);
-    }
-
-    .search-input::placeholder {
-        color: var(--text-muted);
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: var(--accent-primary);
-    }
-
-    /* Categories */
-    .categories-scroll {
-        display: flex;
-        gap: 0.5rem;
-        overflow-x: auto;
-        padding-bottom: 0.5rem;
-        margin-bottom: 1.5rem;
-        scrollbar-width: none;
-    }
-
-    .categories-scroll::-webkit-scrollbar {
-        display: none;
-    }
-
-    .category-chip {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.5rem 1rem;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        white-space: nowrap;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .category-chip:hover {
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-    }
-
-    .category-chip.active {
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
-        color: white;
-    }
-
-    /* Predictions Grid */
-    .predictions-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    /* Prediction Card */
-    .prediction-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .prediction-card:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-lg);
-        border-color: transparent;
-    }
-
-    .card-image {
-        position: relative;
-        aspect-ratio: 16/9;
-        overflow: hidden;
-    }
-
-    .card-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-
-    .prediction-card:hover .card-image img {
-        transform: scale(1.05);
-    }
-
-    .card-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
-    }
-
-    .card-badges {
-        position: absolute;
-        top: 0.75rem;
-        left: 0.75rem;
-        right: 0.75rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-
-    .category-badge {
-        padding: 0.3rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .category-badge.spor { background: rgba(16, 185, 129, 0.95); color: white; }
-    .category-badge.ekonomi { background: rgba(245, 158, 11, 0.95); color: white; }
-    .category-badge.teknoloji { background: rgba(6, 182, 212, 0.95); color: white; }
-    .category-badge.eglence { background: rgba(139, 92, 246, 0.95); color: white; }
-    .category-badge.siyaset { background: rgba(99, 102, 241, 0.95); color: white; }
-    .category-badge.dunya { background: rgba(239, 68, 68, 0.95); color: white; }
-
-    .bi-reward {
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.3rem 0.6rem;
-        background: rgba(0, 0, 0, 0.75);
-        backdrop-filter: blur(4px);
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--bi-color);
-    }
-
-    .bi-reward .bi-icon {
-        width: 16px;
-        height: 16px;
-        background: var(--bi-color);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.5rem;
-        font-weight: 800;
-        color: white;
-    }
-
-    .card-timer {
-        position: absolute;
-        bottom: 0.75rem;
-        right: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.3rem 0.6rem;
-        background: rgba(239, 68, 68, 0.95);
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: white;
-    }
-
-    .card-content {
-        padding: 1rem;
-    }
-
-    .card-title {
-        font-size: 0.95rem;
-        font-weight: 700;
-        line-height: 1.4;
-        margin-bottom: 1rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    /* Yes/No Voting */
-    .vote-section {
-        margin-bottom: 0.75rem;
-    }
-
-    .vote-buttons {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .vote-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-        padding: 0.6rem;
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: var(--bg-card);
-        color: var(--text-primary);
-    }
-
-    .vote-btn.yes:hover, .vote-btn.yes.selected {
-        border-color: var(--accent-success);
-        background: rgba(16, 185, 129, 0.1);
-        color: var(--accent-success);
-    }
-
-    .vote-btn.no:hover, .vote-btn.no.selected {
-        border-color: var(--accent-danger);
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--accent-danger);
-    }
-
-    .vote-btn svg {
-        width: 16px;
-        height: 16px;
-    }
-
-    /* Progress Bar */
-    .vote-progress {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .progress-bar {
-        flex: 1;
-        height: 8px;
-        background: var(--bg-input);
-        border-radius: 4px;
-        overflow: hidden;
-        display: flex;
-    }
-
-    .progress-yes {
-        height: 100%;
-        background: var(--accent-success);
-        transition: width 0.3s ease;
-    }
-
-    .progress-no {
-        height: 100%;
-        background: var(--accent-danger);
-        transition: width 0.3s ease;
-    }
-
-    .vote-stats {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.75rem;
-        margin-top: 0.4rem;
-    }
-
-    .stat-yes {
-        color: var(--accent-success);
-        font-weight: 600;
-    }
-
-    .stat-no {
-        color: var(--accent-danger);
-        font-weight: 600;
-    }
-
-    /* Card Meta */
-    .card-meta {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        padding-top: 0.75rem;
-        border-top: 1px solid var(--border-color);
-    }
-
-    .card-meta span {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .card-meta svg {
-        width: 14px;
-        height: 14px;
-    }
-
-    /* User's Choice Indicator */
-    .user-choice {
-        position: absolute;
-        top: 0.75rem;
-        right: 0.75rem;
-        padding: 0.3rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-    .user-choice.yes {
-        background: rgba(16, 185, 129, 0.95);
-        color: white;
-    }
-
-    .user-choice.no {
-        background: rgba(239, 68, 68, 0.95);
-        color: white;
-    }
-
-    /* Pagination */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-        margin-top: 2rem;
-    }
-
-    .page-btn {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .page-btn:hover {
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-    }
-
-    .page-btn.active {
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
-        color: white;
-    }
-
-    .page-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .page-btn svg {
-        width: 18px;
-        height: 18px;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-    }
-
-    .empty-state-icon {
-        width: 80px;
-        height: 80px;
-        margin: 0 auto 1rem;
-        background: var(--bg-input);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-    }
-
-    .empty-state-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .empty-state-text {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-    }
-
-    /* Responsive */
-    @media (max-width: 1200px) {
-        .predictions-grid {
-            grid-template-columns: repeat(2, 1fr);
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root, [data-theme="dark"] {
+            --bg-dark: #0a0a0b;
+            --bg-card: #141416;
+            --bg-card-hover: #1a1a1d;
+            --border-color: #2a2a2d;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6b6b6b;
+            --accent-primary: #6366f1;
+            --bi-color: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
         }
-    }
-
-    @media (max-width: 768px) {
-        .predictions-grid {
-            grid-template-columns: 1fr;
+        [data-theme="light"] {
+            --bg-dark: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f9f9f9;
+            --border-color: #e5e5e5;
+            --text-primary: #1a1a1a;
+            --text-secondary: #5f6368;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; }
+        .navbar { background: rgba(20, 20, 22, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 0 24px; height: 64px; position: sticky; top: 0; z-index: 1000; }
+        .navbar-content { max-width: 1400px; margin: 0 auto; height: 100%; display: flex; align-items: center; justify-content: space-between; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-primary); font-weight: 700; font-size: 20px; }
+        .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent-primary), #8b5cf6); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+        .nav-center { display: flex; gap: 8px; }
+        .nav-link { padding: 8px 16px; border-radius: 8px; color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .nav-link:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .nav-link.active { background: var(--accent-primary); color: white; }
+        .nav-right { display: flex; align-items: center; gap: 16px; }
+        .bi-badge { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; color: var(--bi-color); font-weight: 600; text-decoration: none; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-primary), #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; text-decoration: none; overflow: hidden; }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .main-content { padding: 24px; max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+        .page-title { font-size: 28px; font-weight: 700; }
+        .kategori-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .kategori-tab { padding: 8px 16px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .kategori-tab:hover { border-color: var(--accent-primary); }
+        .kategori-tab.active { background: var(--accent-primary); border-color: var(--accent-primary); color: white; }
+        .tahmin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+        .tahmin-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; transition: all 0.3s; }
+        .tahmin-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); }
+        .tahmin-card.voted { opacity: 0.8; }
+        .tahmin-header { padding: 20px; border-bottom: 1px solid var(--border-color); }
+        .tahmin-kategori { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+        .tahmin-baslik { font-size: 18px; font-weight: 600; margin-bottom: 8px; line-height: 1.4; }
+        .tahmin-aciklama { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+        .tahmin-meta { display: flex; gap: 16px; font-size: 13px; color: var(--text-muted); }
+        .tahmin-body { padding: 20px; }
+        .oran-bar { display: flex; height: 40px; border-radius: 10px; overflow: hidden; margin-bottom: 16px; background: var(--bg-card-hover); }
+        .oran-evet { background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; transition: width 0.5s; }
+        .oran-hayir { background: linear-gradient(135deg, #ef4444, #dc2626); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; transition: width 0.5s; }
+        .secim-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .secim-btn { padding: 14px 20px; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-card-hover); color: var(--text-primary); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .secim-btn:hover:not(:disabled) { border-color: var(--accent-primary); background: rgba(99, 102, 241, 0.1); }
+        .secim-btn.evet:hover:not(:disabled) { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .secim-btn.hayir:hover:not(:disabled) { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .secim-btn.selected-evet { border-color: #10b981; background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .secim-btn.selected-hayir { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .secim-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .secim-btn small { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+        .tahmin-footer { padding: 16px 20px; background: var(--bg-card-hover); display: flex; align-items: center; justify-content: space-between; }
+        .bi-odul { display: flex; align-items: center; gap: 6px; color: var(--bi-color); font-weight: 700; }
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 16px 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); z-index: 9999; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .spinner { width: 20px; height: 20px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 768px) { .tahmin-grid { grid-template-columns: 1fr; } .nav-center { display: none; } }
+    </style>
+</head>
+<body>
+    <%- include('../partials/user-navbar') %>
 
-        .filters-section {
-            flex-direction: column;
-            align-items: stretch;
-        }
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Tahminler</h1>
+            <div class="kategori-tabs">
+                <a href="/tahminler" class="kategori-tab <%= !kategoriSlug ? 'active' : '' %>">Tumu</a>
+                <% kategoriler.forEach(function(k) { %>
+                    <a href="/tahminler?kategori=<%= k.slug %>" class="kategori-tab <%= kategoriSlug === k.slug ? 'active' : '' %>"><%= k.ikon %> <%= k.ad %></a>
+                <% }); %>
+            </div>
+        </div>
 
-        .filter-group {
-            width: 100%;
-        }
-
-        .filter-select, .search-input {
-            width: 100%;
-        }
-    }
-</style>
-
-<!-- Page Header -->
-<div class="page-header">
-    <h1 class="page-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        Tahminler
-    </h1>
-    <p class="page-subtitle">Gündemdeki tahminlere katıl, bi! kazan!</p>
-</div>
-
-<!-- Filters -->
-<div class="filters-section">
-    <div class="filter-group">
-        <span class="filter-label">Durum:</span>
-        <select class="filter-select" id="statusFilter">
-            <option value="all">Tümü</option>
-            <option value="active">Aktif</option>
-            <option value="ending">Sona Yaklaşan</option>
-            <option value="ended">Sonuçlanmış</option>
-        </select>
-    </div>
-
-    <div class="filter-group">
-        <span class="filter-label">Sıralama:</span>
-        <select class="filter-select" id="sortFilter">
-            <option value="popular">En Popüler</option>
-            <option value="newest">En Yeni</option>
-            <option value="ending">Sona Yaklaşan</option>
-            <option value="reward">En Yüksek Ödül</option>
-        </select>
-    </div>
-
-    <input type="text" class="search-input" placeholder="Tahmin ara..." id="searchInput">
-</div>
-
-<!-- Categories -->
-<div class="categories-scroll">
-    <div class="category-chip active" data-category="all">🔥 Tümü</div>
-    <div class="category-chip" data-category="spor">⚽ Spor</div>
-    <div class="category-chip" data-category="ekonomi">📈 Ekonomi</div>
-    <div class="category-chip" data-category="teknoloji">💻 Teknoloji</div>
-    <div class="category-chip" data-category="eglence">🎬 Eğlence</div>
-    <div class="category-chip" data-category="siyaset">🏛️ Siyaset</div>
-    <div class="category-chip" data-category="dunya">🌍 Dünya</div>
-    <div class="category-chip" data-category="gaming">🎮 Gaming</div>
-</div>
-
-<!-- Predictions Grid -->
-<div class="predictions-grid">
-    <% if (typeof predictions !== 'undefined' && predictions.length > 0) { %>
-        <% predictions.forEach(function(prediction) { %>
-            <div class="prediction-card" data-id="<%= prediction.id %>">
-                <div class="card-image">
-                    <img src="<%= prediction.image || 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&q=80' %>" alt="<%= prediction.title %>">
-                    <div class="card-overlay"></div>
-                    <div class="card-badges">
-                        <span class="category-badge <%= prediction.category.toLowerCase() %>"><%= prediction.categoryIcon %> <%= prediction.category %></span>
-                        <span class="bi-reward">
-                            <div class="bi-icon">bi!</div>
-                            +<%= prediction.reward %>
-                        </span>
-                    </div>
-                    <% if (prediction.userChoice) { %>
-                        <span class="user-choice <%= prediction.userChoice %>">
-                            <%= prediction.userChoice === 'yes' ? '✓ EVET' : '✗ HAYIR' %>
-                        </span>
-                    <% } %>
-                    <div class="card-timer">⏱ <%= prediction.timeLeft %></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title"><%= prediction.title %></h3>
-                    <div class="vote-section">
-                        <div class="vote-buttons">
-                            <button class="vote-btn yes <%= prediction.userChoice === 'yes' ? 'selected' : '' %>" onclick="vote('<%= prediction.id %>', 'yes')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                                EVET
-                            </button>
-                            <button class="vote-btn no <%= prediction.userChoice === 'no' ? 'selected' : '' %>" onclick="vote('<%= prediction.id %>', 'no')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                HAYIR
-                            </button>
-                        </div>
-                        <div class="vote-progress">
-                            <div class="progress-bar">
-                                <div class="progress-yes" style="width: <%= prediction.yesPercent %>%"></div>
-                                <div class="progress-no" style="width: <%= prediction.noPercent %>%"></div>
+        <% if (tahminler.length === 0) { %>
+            <div class="empty-state">
+                <h3>Henuz tahmin yok</h3>
+                <p>Bu kategoride aktif tahmin bulunmuyor.</p>
+            </div>
+        <% } else { %>
+            <div class="tahmin-grid">
+                <% tahminler.forEach(function(t) { %>
+                    <% const voted = kullaniciTahminleri[t.id]; %>
+                    <div class="tahmin-card <%= voted ? 'voted' : '' %>" data-id="<%= t.id %>">
+                        <div class="tahmin-header">
+                            <div class="tahmin-kategori" style="background: <%= t.kategori_renk %>20; color: <%= t.kategori_renk %>">
+                                <%= t.kategori_ikon %> <%= t.kategori_adi %>
+                            </div>
+                            <h3 class="tahmin-baslik"><%= t.baslik %></h3>
+                            <% if (t.aciklama) { %><p class="tahmin-aciklama"><%= t.aciklama %></p><% } %>
+                            <div class="tahmin-meta">
+                                <span><%= t.katilimci_sayisi || 0 %> katilimci</span>
+                                <% if (t.bitis_tarihi) { %><span>Bitis: <%= new Date(t.bitis_tarihi).toLocaleDateString('tr-TR') %></span><% } %>
                             </div>
                         </div>
-                        <div class="vote-stats">
-                            <span class="stat-yes">%<%= prediction.yesPercent %> Evet</span>
-                            <span class="stat-no">%<%= prediction.noPercent %> Hayır</span>
+                        <div class="tahmin-body">
+                            <% if (t.tip === 'evet_hayir') { %>
+                                <div class="oran-bar">
+                                    <div class="oran-evet" style="width: <%= t.evet_orani %>%"><%= t.evet_orani %>%</div>
+                                    <div class="oran-hayir" style="width: <%= t.hayir_orani %>%"><%= t.hayir_orani %>%</div>
+                                </div>
+                                <div class="secim-buttons">
+                                    <button class="secim-btn evet <%= voted === 'evet' ? 'selected-evet' : '' %>" onclick="tahminYap(<%= t.id %>, 'evet')" <%= voted ? 'disabled' : '' %>>Evet<small><%= t.evet_orani %>%</small></button>
+                                    <button class="secim-btn hayir <%= voted === 'hayir' ? 'selected-hayir' : '' %>" onclick="tahminYap(<%= t.id %>, 'hayir')" <%= voted ? 'disabled' : '' %>>Hayir<small><%= t.hayir_orani %>%</small></button>
+                                </div>
+                            <% } else { %>
+                                <p style="color: var(--text-muted); text-align: center;">Coktan secmeli tahmin</p>
+                            <% } %>
+                        </div>
+                        <div class="tahmin-footer">
+                            <div class="bi-odul"><span>+<%= t.bi_odul %></span><span>bi!</span></div>
+                            <div style="font-size: 13px; color: var(--text-muted);"><% if (voted) { %>Tahmininiz: <strong><%= voted === 'evet' ? 'Evet' : 'Hayir' %></strong><% } else { %>Tahmin yap ve kazan!<% } %></div>
                         </div>
                     </div>
-                    <div class="card-meta">
-                        <span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                            <%= prediction.participants.toLocaleString('tr-TR') %> tahmin
-                        </span>
-                    </div>
-                </div>
+                <% }); %>
             </div>
-        <% }); %>
-    <% } else { %>
-        <!-- Sample predictions for display -->
-        <div class="prediction-card">
-            <div class="card-image">
-                <img src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=600&q=80" alt="Derbi">
-                <div class="card-overlay"></div>
-                <div class="card-badges">
-                    <span class="category-badge spor">⚽ Spor</span>
-                    <span class="bi-reward">
-                        <div class="bi-icon">bi!</div>
-                        +500
-                    </span>
-                </div>
-                <div class="card-timer">⏱ 02:45:30</div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">Galatasaray - Fenerbahçe derbisinde 3'ten fazla gol olur mu?</h3>
-                <div class="vote-section">
-                    <div class="vote-buttons">
-                        <button class="vote-btn yes">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                            EVET
-                        </button>
-                        <button class="vote-btn no">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            HAYIR
-                        </button>
-                    </div>
-                    <div class="vote-progress">
-                        <div class="progress-bar">
-                            <div class="progress-yes" style="width: 62%"></div>
-                            <div class="progress-no" style="width: 38%"></div>
-                        </div>
-                    </div>
-                    <div class="vote-stats">
-                        <span class="stat-yes">%62 Evet</span>
-                        <span class="stat-no">%38 Hayır</span>
-                    </div>
-                </div>
-                <div class="card-meta">
-                    <span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        3,245 tahmin
-                    </span>
-                </div>
-            </div>
-        </div>
+        <% } %>
+    </div>
 
-        <div class="prediction-card">
-            <div class="card-image">
-                <img src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80" alt="Dolar">
-                <div class="card-overlay"></div>
-                <div class="card-badges">
-                    <span class="category-badge ekonomi">📈 Ekonomi</span>
-                    <span class="bi-reward">
-                        <div class="bi-icon">bi!</div>
-                        +750
-                    </span>
-                </div>
-                <div class="card-timer">⏱ 5 gün</div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">Dolar/TL ay sonunda 35₺'yi geçer mi?</h3>
-                <div class="vote-section">
-                    <div class="vote-buttons">
-                        <button class="vote-btn yes">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                            EVET
-                        </button>
-                        <button class="vote-btn no">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            HAYIR
-                        </button>
-                    </div>
-                    <div class="vote-progress">
-                        <div class="progress-bar">
-                            <div class="progress-yes" style="width: 71%"></div>
-                            <div class="progress-no" style="width: 29%"></div>
-                        </div>
-                    </div>
-                    <div class="vote-stats">
-                        <span class="stat-yes">%71 Evet</span>
-                        <span class="stat-no">%29 Hayır</span>
-                    </div>
-                </div>
-                <div class="card-meta">
-                    <span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        2,128 tahmin
-                    </span>
-                </div>
-            </div>
-        </div>
+    <%- include('../partials/footer') %>
 
-        <div class="prediction-card">
-            <div class="card-image">
-                <img src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&q=80" alt="iPhone">
-                <div class="card-overlay"></div>
-                <div class="card-badges">
-                    <span class="category-badge teknoloji">💻 Teknoloji</span>
-                    <span class="bi-reward">
-                        <div class="bi-icon">bi!</div>
-                        +1000
-                    </span>
-                </div>
-                <div class="card-timer">⏱ 30 gün</div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">iPhone 17 Eylül ayında tanıtılır mı?</h3>
-                <div class="vote-section">
-                    <div class="vote-buttons">
-                        <button class="vote-btn yes">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                            EVET
-                        </button>
-                        <button class="vote-btn no">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            HAYIR
-                        </button>
-                    </div>
-                    <div class="vote-progress">
-                        <div class="progress-bar">
-                            <div class="progress-yes" style="width: 85%"></div>
-                            <div class="progress-no" style="width: 15%"></div>
-                        </div>
-                    </div>
-                    <div class="vote-stats">
-                        <span class="stat-yes">%85 Evet</span>
-                        <span class="stat-no">%15 Hayır</span>
-                    </div>
-                </div>
-                <div class="card-meta">
-                    <span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        1,567 tahmin
-                    </span>
-                </div>
-            </div>
-        </div>
+    <div id="toast" class="toast"><span id="toastMessage"></span></div>
 
-        <div class="prediction-card">
-            <div class="card-image">
-                <img src="https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=600&q=80" alt="Bitcoin">
-                <div class="card-overlay"></div>
-                <div class="card-badges">
-                    <span class="category-badge ekonomi">📈 Kripto</span>
-                    <span class="bi-reward">
-                        <div class="bi-icon">bi!</div>
-                        +600
-                    </span>
-                </div>
-                <div class="card-timer">⏱ 7 gün</div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">Bitcoin bu hafta 100.000$'ı aşar mı?</h3>
-                <div class="vote-section">
-                    <div class="vote-buttons">
-                        <button class="vote-btn yes">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                            EVET
-                        </button>
-                        <button class="vote-btn no">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            HAYIR
-                        </button>
-                    </div>
-                    <div class="vote-progress">
-                        <div class="progress-bar">
-                            <div class="progress-yes" style="width: 67%"></div>
-                            <div class="progress-no" style="width: 33%"></div>
-                        </div>
-                    </div>
-                    <div class="vote-stats">
-                        <span class="stat-yes">%67 Evet</span>
-                        <span class="stat-no">%33 Hayır</span>
-                    </div>
-                </div>
-                <div class="card-meta">
-                    <span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        3,892 tahmin
-                    </span>
-                </div>
-            </div>
-        </div>
+    <script>
+        const themeMode = localStorage.getItem('themeMode') || 'dark';
+        document.documentElement.setAttribute('data-theme', themeMode);
+        const socket = io();
+        <% if (typeof user !== 'undefined' && user) { %>socket.emit('join', <%= user.id %>);<% } %>
+        socket.on('biCoinUpdate', (data) => { const el = document.getElementById('biCoinDisplay'); if(el) el.textContent = data.bi_coin.toLocaleString('tr-TR'); });
 
-        <div class="prediction-card">
-            <div class="card-image">
-                <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600&q=80" alt="Oscar">
-                <div class="card-overlay"></div>
-                <div class="card-badges">
-                    <span class="category-badge eglence">🎬 Eğlence</span>
-                    <span class="bi-reward">
-                        <div class="bi-icon">bi!</div>
-                        +300
-                    </span>
-                </div>
-                <div class="card-timer">⏱ 45 gün</div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">Oscar'da En İyi Film ödülünü Türk yapımı alır mı?</h3>
-                <div class="vote-section">
-                    <div class="vote-buttons">
-                        <button class="vote-btn yes">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                            EVET
-                        </button>
-                        <button class="vote-btn no">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            HAYIR
-                        </button>
-                    </div>
-                    <div class="vote-progress">
-                        <div class="progress-bar">
-                            <div class="progress-yes" style="width: 23%"></div>
-                            <div class="progress-no" style="width: 77%"></div>
-                        </div>
-                    </div>
-                    <div class="vote-stats">
-                        <span class="stat-yes">%23 Evet</span>
-                        <span class="stat-no">%77 Hayır</span>
-                    </div>
-                </div>
-                <div class="card-meta">
-                    <span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        1,923 tahmin
-                    </span>
-                </div>
-            </div>
-        </div>
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.className = 'toast ' + type;
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
 
-        <div class="prediction-card">
-            <div class="card-image">
-                <img src="https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=600&q=80" alt="Seçim">
-                <div class="card-overlay"></div>
-                <div class="card-badges">
-                    <span class="category-badge siyaset">🏛️ Siyaset</span>
-                    <span class="bi-reward">
-                        <div class="bi-icon">bi!</div>
-                        +800
-                    </span>
-                </div>
-                <div class="card-timer">⏱ 60 gün</div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">ABD seçimlerinde mevcut başkan yeniden seçilir mi?</h3>
-                <div class="vote-section">
-                    <div class="vote-buttons">
-                        <button class="vote-btn yes">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                            EVET
-                        </button>
-                        <button class="vote-btn no">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            HAYIR
-                        </button>
-                    </div>
-                    <div class="vote-progress">
-                        <div class="progress-bar">
-                            <div class="progress-yes" style="width: 52%"></div>
-                            <div class="progress-no" style="width: 48%"></div>
-                        </div>
-                    </div>
-                    <div class="vote-stats">
-                        <span class="stat-yes">%52 Evet</span>
-                        <span class="stat-no">%48 Hayır</span>
-                    </div>
-                </div>
-                <div class="card-meta">
-                    <span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        6,341 tahmin
-                    </span>
-                </div>
-            </div>
-        </div>
-    <% } %>
-</div>
+        async function tahminYap(tahminId, secim) {
+            const card = document.querySelector(`[data-id="${tahminId}"]`);
+            const buttons = card.querySelectorAll('.secim-btn');
+            buttons.forEach(btn => { btn.disabled = true; if (btn.classList.contains(secim)) btn.innerHTML = '<div class="spinner"></div>'; });
 
-<!-- Pagination -->
-<div class="pagination">
-    <button class="page-btn" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <button class="page-btn active">1</button>
-    <button class="page-btn">2</button>
-    <button class="page-btn">3</button>
-    <button class="page-btn">4</button>
-    <button class="page-btn">5</button>
-    <button class="page-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-</div>
-
-<script>
-    // Category chips
-    document.querySelectorAll('.category-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            // Filter predictions by category
-            filterPredictions();
-        });
-    });
-
-    // Vote buttons
-    document.querySelectorAll('.vote-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const parent = btn.closest('.vote-buttons');
-            parent.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-        });
-    });
-
-    // Search functionality
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        filterPredictions();
-    });
-
-    // Filter functionality
-    document.getElementById('statusFilter').addEventListener('change', filterPredictions);
-    document.getElementById('sortFilter').addEventListener('change', filterPredictions);
-
-    function filterPredictions() {
-        const search = document.getElementById('searchInput').value.toLowerCase();
-        const status = document.getElementById('statusFilter').value;
-        const sort = document.getElementById('sortFilter').value;
-        const category = document.querySelector('.category-chip.active').dataset.category;
-
-        // In production, this would make an API call
-        console.log('Filtering:', { search, status, sort, category });
-    }
-
-    // Vote function
-    function vote(predictionId, choice) {
-        // In production, this would make an API call
-        console.log('Voting:', predictionId, choice);
-        // Show success message
-        alert('Tahminin kaydedildi!');
-    }
-
-    // Pagination
-    document.querySelectorAll('.page-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (btn.disabled) return;
-            document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            // Load page
-        });
-    });
-</script>
+            try {
+                const response = await fetch('/tahminler/yap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tahmin_id: tahminId, secim: secim }) });
+                const data = await response.json();
+                if (data.success) { showToast(data.message, 'success'); setTimeout(() => location.reload(), 1000); }
+                else { showToast(data.message, 'error'); buttons.forEach(btn => btn.disabled = false); }
+            } catch (err) { showToast('Bir hata olustu', 'error'); buttons.forEach(btn => btn.disabled = false); }
+        }
+    </script>
+</body>
+</html>
