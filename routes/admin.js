@@ -8,24 +8,24 @@ router.get('/', ensureAdmin, async (req, res) => {
     try {
         // İstatistikler
         const stats = {};
-        
+
         const userCount = await db.getOne('SELECT COUNT(*) as total FROM kullanicilar');
-        stats.toplamKullanici = userCount?.total || 0;
+        stats.totalUsers = userCount?.total || 0;
 
         const activeUserCount = await db.getOne(`
-            SELECT COUNT(*) as total FROM kullanicilar 
+            SELECT COUNT(*) as total FROM kullanicilar
             WHERE son_giris >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
         `);
-        stats.aktifKullanici = activeUserCount?.total || 0;
+        stats.activeToday = activeUserCount?.total || 0;
 
         const predictionCount = await db.getOne('SELECT COUNT(*) as total FROM tahminler WHERE durum = "aktif"');
-        stats.aktifTahmin = predictionCount?.total || 0;
+        stats.activePredictions = predictionCount?.total || 0;
 
-        const totalBiCount = await db.getOne('SELECT SUM(bi_coin) as total FROM kullanicilar');
-        stats.toplamBiCoin = totalBiCount?.total || 0;
+        // Aylık gelir (placeholder - gerçek sistemde satışlardan hesaplanmalı)
+        stats.monthlyRevenue = 0;
 
         // Son tahminler
-        const sonTahminler = await db.getAll(`
+        const recentPredictions = await db.getAll(`
             SELECT t.*, k.ad as kategori_adi
             FROM tahminler t
             LEFT JOIN kategoriler k ON t.kategori_id = k.id
@@ -34,22 +34,16 @@ router.get('/', ensureAdmin, async (req, res) => {
         `);
 
         // Son aktiviteler
-        const aktiviteler = await db.getAll(`
-            (SELECT 'kullanici' as tip, ad_soyad as baslik, 'Yeni kayıt' as aciklama, olusturma_tarihi 
-             FROM kullanicilar ORDER BY olusturma_tarihi DESC LIMIT 5)
-            UNION ALL
-            (SELECT 'tahmin' as tip, baslik, 'Yeni tahmin' as aciklama, olusturma_tarihi 
-             FROM tahminler ORDER BY olusturma_tarihi DESC LIMIT 5)
-            ORDER BY olusturma_tarihi DESC
-            LIMIT 10
-        `);
+        const recentActivities = [];
 
         res.render('admin/dashboard', {
             title: 'Admin Dashboard - Bilemezsin',
             layout: 'layouts/admin',
+            activeMenu: 'dashboard',
+            pageTitle: 'Dashboard',
             stats,
-            sonTahminler,
-            aktiviteler
+            recentPredictions,
+            recentActivities
         });
     } catch (err) {
         console.error('Admin dashboard hatası:', err);
@@ -353,8 +347,83 @@ router.get('/reklamlar', ensureAdmin, async (req, res) => {
 router.get('/ayarlar', ensureAdmin, (req, res) => {
     res.render('admin/ayarlar', {
         title: 'Ayarlar - Admin',
-        layout: 'layouts/admin'
+        layout: 'layouts/admin',
+        activeMenu: 'ayarlar',
+        pageTitle: 'Ayarlar'
     });
+});
+
+// Gorevler Yonetimi
+router.get('/gorevler', ensureAdmin, async (req, res) => {
+    try {
+        const gorevler = await db.getAll(`
+            SELECT * FROM gorevler ORDER BY tip, sira
+        `);
+
+        res.render('admin/gorevler', {
+            title: 'Gorev Yonetimi - Admin',
+            layout: 'layouts/admin',
+            activeMenu: 'gorevler',
+            pageTitle: 'Gorev Yonetimi',
+            gorevler
+        });
+    } catch (err) {
+        console.error('Gorevler listesi hatasi:', err);
+        req.flash('error_msg', 'Bir hata olustu');
+        res.redirect('/admin');
+    }
+});
+
+// Gorev Ekle
+router.post('/gorevler/ekle', ensureAdmin, async (req, res) => {
+    try {
+        const { ad, aciklama, tip, kosul_tip, kosul_deger, bi_odul, xp_odul, ikon, link } = req.body;
+
+        await db.insert(`
+            INSERT INTO gorevler (ad, aciklama, tip, kosul_tip, kosul_deger, bi_odul, xp_odul, ikon, link, aktif_mi)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        `, [ad, aciklama, tip, kosul_tip, kosul_deger || null, bi_odul || 0, xp_odul || 0, ikon, link || null]);
+
+        req.flash('success_msg', 'Gorev eklendi');
+        res.redirect('/admin/gorevler');
+    } catch (err) {
+        console.error('Gorev ekleme hatasi:', err);
+        req.flash('error_msg', 'Bir hata olustu');
+        res.redirect('/admin/gorevler');
+    }
+});
+
+// Gorev Duzenle
+router.post('/gorevler/:id/duzenle', ensureAdmin, async (req, res) => {
+    try {
+        const { ad, aciklama, tip, kosul_tip, kosul_deger, bi_odul, xp_odul, ikon, link, aktif_mi } = req.body;
+
+        await db.execute(`
+            UPDATE gorevler SET ad = ?, aciklama = ?, tip = ?, kosul_tip = ?, kosul_deger = ?,
+            bi_odul = ?, xp_odul = ?, ikon = ?, link = ?, aktif_mi = ?
+            WHERE id = ?
+        `, [ad, aciklama, tip, kosul_tip, kosul_deger || null, bi_odul || 0, xp_odul || 0, ikon, link || null, aktif_mi ? 1 : 0, req.params.id]);
+
+        req.flash('success_msg', 'Gorev guncellendi');
+        res.redirect('/admin/gorevler');
+    } catch (err) {
+        console.error('Gorev guncelleme hatasi:', err);
+        req.flash('error_msg', 'Bir hata olustu');
+        res.redirect('/admin/gorevler');
+    }
+});
+
+// Gorev Sil
+router.post('/gorevler/:id/sil', ensureAdmin, async (req, res) => {
+    try {
+        await db.execute('DELETE FROM gorevler WHERE id = ?', [req.params.id]);
+        req.flash('success_msg', 'Gorev silindi');
+        res.redirect('/admin/gorevler');
+    } catch (err) {
+        console.error('Gorev silme hatasi:', err);
+        req.flash('error_msg', 'Bir hata olustu');
+        res.redirect('/admin/gorevler');
+    }
 });
 
 module.exports = router;

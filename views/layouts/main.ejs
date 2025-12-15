@@ -253,6 +253,16 @@
             object-fit: cover;
         }
 
+        .user-dropdown:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-menu a:hover {
+            background: var(--bg-input);
+        }
+
         .auth-buttons {
             display: flex;
             gap: 0.5rem;
@@ -417,13 +427,24 @@
                         <span class="auto-indicator" id="autoIndicator" style="display: none;">OTO</span>
                     </div>
 
-                    <a href="/dashboard" class="user-avatar">
-                        <% if (user.avatar) { %>
-                            <img src="<%= user.avatar %>" alt="<%= user.ad_soyad %>">
-                        <% } else { %>
-                            <%= user.ad_soyad ? user.ad_soyad.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U' %>
-                        <% } %>
-                    </a>
+                    <div class="user-dropdown" style="position: relative;">
+                        <div class="user-avatar">
+                            <% if (user.avatar) { %>
+                                <img src="<%= user.avatar %>" alt="<%= user.ad_soyad %>">
+                            <% } else { %>
+                                <%= user.ad_soyad ? user.ad_soyad.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U' %>
+                            <% } %>
+                        </div>
+                        <div class="dropdown-menu" style="position: absolute; top: calc(100% + 8px); right: 0; min-width: 180px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s; z-index: 1001;">
+                            <a href="/dashboard" style="display: block; padding: 12px 16px; color: var(--text-secondary); text-decoration: none; font-size: 14px;">Dashboard</a>
+                            <a href="/profil" style="display: block; padding: 12px 16px; color: var(--text-secondary); text-decoration: none; font-size: 14px;">Profil Ayarlari</a>
+                            <% if (user && (user.rol === 'admin' || user.rol === 'superadmin' || user.rol === 'moderator')) { %>
+                            <a href="/admin" style="display: block; padding: 12px 16px; color: var(--text-secondary); text-decoration: none; font-size: 14px;">Admin Panel</a>
+                            <% } %>
+                            <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                            <a href="/auth/cikis" style="display: block; padding: 12px 16px; color: #ef4444; text-decoration: none; font-size: 14px;">Cikis Yap</a>
+                        </div>
+                    </div>
                 <% } else { %>
                     <div class="theme-toggle">
                         <button class="theme-btn" id="lightBtn" title="Light Mode">

@@ -70,6 +70,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 
         res.render('user/gorevler', {
             title: 'Gorevler - Bilemezsin',
+            layout: false,
             gorevler,
             toplamKazanilabilir,
             tamamlananSayisi,
@@ -305,6 +306,14 @@ async function tamamlaGorev(kullaniciId, gorevId, biOdul, xpOdul) {
 
     // bi! islem kaydi olustur
     const kullanici = await db.getOne('SELECT bi_coin FROM kullanicilar WHERE id = ?', [kullaniciId]);
+
+    // Socket.io ile canli bi! coin guncelle
+    if (global.updateUserBiCoin) {
+        global.updateUserBiCoin(kullaniciId, kullanici.bi_coin);
+    }
+    if (global.updateLeaderboard) {
+        global.updateLeaderboard();
+    }
     await db.query(`
         INSERT INTO bi_islemleri (kullanici_id, miktar, tip, aciklama, referans_tip, referans_id, bakiye_sonrasi)
         VALUES (?, ?, 'bonus', 'Gorev odulu', 'gorev', ?, ?)

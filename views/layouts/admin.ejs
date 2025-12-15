@@ -502,11 +502,14 @@
 
         <div class="sidebar-footer">
             <div class="admin-profile">
-                <div class="admin-avatar"><%= typeof admin !== 'undefined' && admin ? admin.ad.charAt(0) + admin.soyad.charAt(0) : 'SA' %></div>
+                <div class="admin-avatar"><%= typeof user !== 'undefined' && user && user.ad_soyad ? user.ad_soyad.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'A' %></div>
                 <div class="admin-info">
-                    <div class="admin-name"><%= typeof admin !== 'undefined' && admin ? admin.ad + ' ' + admin.soyad : 'Admin' %></div>
-                    <div class="admin-role"><%= typeof admin !== 'undefined' && admin ? (admin.rol === 'super_admin' ? 'Süper Admin' : 'Admin') : 'Yönetici' %></div>
+                    <div class="admin-name"><%= typeof user !== 'undefined' && user ? user.ad_soyad : 'Admin' %></div>
+                    <div class="admin-role"><%= typeof user !== 'undefined' && user ? (user.rol === 'superadmin' ? 'Super Admin' : user.rol === 'admin' ? 'Admin' : 'Moderator') : 'Yonetici' %></div>
                 </div>
+                <a href="/auth/cikis" style="margin-left: auto; color: var(--text-muted); text-decoration: none;" title="Cikis">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </a>
             </div>
         </div>
     </aside>
